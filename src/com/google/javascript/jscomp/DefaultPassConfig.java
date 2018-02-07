@@ -541,7 +541,7 @@ public final class DefaultPassConfig extends PassConfig {
 
     // Replace 'goog.getCssName' before processing defines but after the
     // other checks have been done.
-    if (options.closurePass) {
+    if (options.closurePass && !options.shouldPreserveGoogLibraryPrimitives()) {
       checks.add(closureReplaceGetCssName);
     }
 
@@ -738,10 +738,6 @@ public final class DefaultPassConfig extends PassConfig {
       // store the result outside the AST (which would allow garbage
       // collection once the pass is done).
       passes.add(markNoSideEffectCalls);
-    }
-
-    if (options.chainCalls) {
-      passes.add(chainCalls);
     }
 
     if (options.smartNameRemoval) {
@@ -2561,20 +2557,6 @@ public final class DefaultPassConfig extends PassConfig {
         @Override
         protected CompilerPass create(AbstractCompiler compiler) {
           return new DisambiguateProperties(compiler, options.propertyInvalidationErrors);
-        }
-
-        @Override
-        protected FeatureSet featureSet() {
-          return ES5;
-        }
-      };
-
-  /** Chain calls to functions that return this. */
-  private final PassFactory chainCalls =
-      new PassFactory(PassNames.CHAIN_CALLS, true) {
-        @Override
-        protected CompilerPass create(AbstractCompiler compiler) {
-          return new ChainCalls(compiler);
         }
 
         @Override

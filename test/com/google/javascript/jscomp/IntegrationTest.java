@@ -1711,22 +1711,6 @@ public final class IntegrationTest extends IntegrationTestCase {
     test(options, testCode, "");
   }
 
-  public void testChainedCalls() {
-    CompilerOptions options = createCompilerOptions();
-    options.chainCalls = true;
-    test(
-        options,
-        "/** @constructor */ function Foo() {} " +
-        "Foo.prototype.bar = function() { return this; }; " +
-        "var f = new Foo();" +
-        "f.bar(); " +
-        "f.bar(); ",
-        "function Foo() {} " +
-        "Foo.prototype.bar = function() { return this; }; " +
-        "var f = new Foo();" +
-        "f.bar().bar();");
-  }
-
   public void testExtraAnnotationNames() {
     CompilerOptions options = createCompilerOptions();
     options.setExtraAnnotationNames(ImmutableSet.of("TagA", "TagB"));
@@ -3525,6 +3509,46 @@ public final class IntegrationTest extends IntegrationTestCase {
     testSame(options, "x = 1; {START(); {z = 3} END()} f()");
     test(options, "x = 1; y = 3; {START(); {z = 3} END()} f()",
                   "x = 1, y = 3; {START(); {z = 3} END()} f()");
+  }
+
+  /**
+   * Make sure this doesn't compile to code containing <pre>a: break a;</pre> which doesn't work
+   * properly on some versions of Edge. See b/72667630.
+   */
+  public void testNoSelfReferencingBreakWithSyntheticBlocks() {
+    CompilerOptions options = createCompilerOptions();
+    CompilationLevel.ADVANCED_OPTIMIZATIONS.setOptionsForCompilationLevel(options);
+    options.setWarningLevel(DiagnosticGroups.UNDEFINED_VARIABLES, CheckLevel.OFF);
+    options.syntheticBlockStartMarker = "START";
+    options.syntheticBlockEndMarker = "END";
+    test(
+        options,
+        lines(
+            "const D = false;",
+            "/**",
+            " * @param {string} m",
+            " */",
+            "function b(m) {",
+            " if (!D) return;",
+            "",
+            " START('debug');",
+            " alert('Shouldnt be here' + m);",
+            " END('debug');",
+            "}",
+            "/**",
+            " * @param {string} arg",
+            " */",
+            "function a(arg) {",
+            "  if (arg == 'log') {",
+            "    b('logging 1');",
+            "    b('logging 2');",
+            "  } else {",
+            "    alert('Hi!');",
+            "  }",
+            "}",
+            "",
+            "a(input);"),
+        "'log' != input && alert('Hi!')");
   }
 
   public void testBug5786871() {
