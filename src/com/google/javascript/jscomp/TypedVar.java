@@ -18,6 +18,8 @@ package com.google.javascript.jscomp;
 
 import com.google.javascript.rhino.ErrorReporter;
 import com.google.javascript.rhino.Node;
+import com.google.javascript.rhino.StaticSourceFile;
+import com.google.javascript.rhino.Token;
 import com.google.javascript.rhino.TypeI;
 import com.google.javascript.rhino.jstype.JSType;
 import com.google.javascript.rhino.jstype.StaticTypedRef;
@@ -26,7 +28,8 @@ import com.google.javascript.rhino.jstype.StaticTypedSlot;
 /**
  * {@link AbstractVar} subclass for use with {@link TypedScope}.
  */
-public class TypedVar extends Var implements StaticTypedSlot<JSType>, StaticTypedRef<JSType> {
+public class TypedVar extends AbstractVar<TypedScope, TypedVar>
+    implements StaticTypedSlot<JSType>, StaticTypedRef<JSType> {
 
   private JSType type;
   // The next two fields and the associated methods are only used by
@@ -46,21 +49,6 @@ public class TypedVar extends Var implements StaticTypedSlot<JSType>, StaticType
     super(name, nameNode, scope, index, input);
     this.type = type;
     this.typeInferred = inferred;
-  }
-
-  @Override
-  public TypedVar getSymbol() {
-    return (TypedVar) super.getSymbol();
-  }
-
-  @Override
-  public TypedVar getDeclaration() {
-    return (TypedVar) super.getDeclaration();
-  }
-
-  @Override
-  public TypedScope getScope() {
-    return (TypedScope) super.getScope();
   }
 
   /**
@@ -83,7 +71,7 @@ public class TypedVar extends Var implements StaticTypedSlot<JSType>, StaticType
 
   void resolveType(ErrorReporter errorReporter) {
     if (type != null) {
-      type = type.resolve(errorReporter, (TypedScope) scope);
+      type = type.resolve(errorReporter, scope);
     }
   }
 
@@ -101,19 +89,6 @@ public class TypedVar extends Var implements StaticTypedSlot<JSType>, StaticType
       return "<non-file>";
     }
     return input.getName();
-  }
-
-  @Override
-  public boolean equals(Object other) {
-    if (!(other instanceof TypedVar)) {
-      return false;
-    }
-    return ((TypedVar) other).nameNode == nameNode;
-  }
-
-  @Override
-  public int hashCode() {
-    return nameNode.hashCode();
   }
 
   @Override
@@ -135,5 +110,40 @@ public class TypedVar extends Var implements StaticTypedSlot<JSType>, StaticType
 
   boolean isMarkedAssignedExactlyOnce() {
     return markedAssignedExactlyOnce;
+  }
+
+  static TypedVar makeArguments(TypedScope scope) {
+    // Look for an extern named "arguments" and use its type if available.
+    // TODO(sdh): consider looking for "Arguments" ctor rather than "arguments" var: this could
+    // allow deleting the variable, which doesn't really belong in externs in the first place.
+    TypedVar globalArgs = scope.getGlobalScope().getVar(Var.ARGUMENTS);
+    JSType type = globalArgs != null && globalArgs.isExtern() ? globalArgs.getType() : null;
+    return new TypedArguments(type, scope);
+  }
+
+  private static final class TypedArguments extends TypedVar {
+    TypedArguments(JSType type, TypedScope scope) {
+      super(false, Var.ARGUMENTS, null, type, scope, -1, null);
+    }
+
+    @Override
+    public boolean isArguments() {
+      return true;
+    }
+
+    @Override
+    public StaticSourceFile getSourceFile() {
+      return scope.getRootNode().getStaticSourceFile();
+    }
+
+    @Override
+    public boolean isBleedingFunction() {
+      return false;
+    }
+
+    @Override
+    protected Token declarationType() {
+      return null;
+    }
   }
 }

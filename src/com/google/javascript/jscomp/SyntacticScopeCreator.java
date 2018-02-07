@@ -35,10 +35,6 @@ public class SyntacticScopeCreator implements ScopeCreator {
   private AbstractScope<?, ?> scope;
   private InputId inputId;
 
-  // The arguments variable is special, in that it's declared in every local
-  // scope, but not explicitly declared.
-  private static final String ARGUMENTS = "arguments";
-
   private final boolean isTyped;
 
   private SyntacticScopeCreator(AbstractCompiler compiler, boolean isTyped) {
@@ -66,7 +62,10 @@ public class SyntacticScopeCreator implements ScopeCreator {
     if (parent == null) {
       scope = isTyped ? TypedScope.createGlobalScope(n) : Scope.createGlobalScope(n);
     } else {
-      scope = isTyped ? new TypedScope((TypedScope) parent, n) : new Scope((Scope) parent, n);
+      scope =
+          isTyped
+              ? new TypedScope((TypedScope) parent, n)
+              : Scope.createChildScope((Scope) parent, n);
     }
 
     scanRoot(n);
@@ -187,8 +186,7 @@ public class SyntacticScopeCreator implements ScopeCreator {
 
     CompilerInput input = compiler.getInput(inputId);
     String name = n.getString();
-    if (!scope.isDeclared(name, false)
-        && !(scope.isLocal() && name.equals(ARGUMENTS))) {
+    if (!scope.isDeclared(name, false) && !(scope.isLocal() && name.equals(Var.ARGUMENTS))) {
       if (isTyped) {
         ((TypedScope) scope).declare(name, n, null, input);
       } else {
