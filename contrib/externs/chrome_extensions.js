@@ -3551,7 +3551,7 @@ chrome.cookies = {};
  * This typedef is used for the parameters to chrome.cookies.get,
  * chrome.cookies.remove, and for the parameter to remove's callback. These uses
  * all identify a single cookie uniquely without specifying its content, and the
- * objects are identical except for the storeId being optional vs required.
+ * objects are identical except for the the storeId being optional vs required.
  * If greater divergence occurs, then going to two typedefs is recommended.
  *
  * @typedef {?{
@@ -3646,10 +3646,7 @@ CookieChangeInfo.prototype.cookie;
 CookieChangeInfo.prototype.cause;
 
 
-/**
- * @const
- * @see https://developer.chrome.com/extensions/management
- */
+/** @const */
 chrome.management = {};
 
 
@@ -3662,14 +3659,6 @@ chrome.management.InstallOptions;
 
 
 /**
- * @param {function(!Array<!ExtensionInfo>): void=} opt_callback Optional
- *     callback function.
- * @return {!Array<!ExtensionInfo>}
- */
-chrome.management.getAll = function(opt_callback) {};
-
-
-/**
  * @param {string} id
  * @param {function(!ExtensionInfo): void=} opt_callback Optional callback
  *     function.
@@ -3679,11 +3668,11 @@ chrome.management.get = function(id, opt_callback) {};
 
 
 /**
- * @param {function(!ExtensionInfo): void=} opt_callback Optional
- *     callback function
- * @return {undefined}
+ * @param {function(!Array<!ExtensionInfo>): void=} opt_callback Optional
+ *     callback function.
+ * @return {!Array<!ExtensionInfo>}
  */
-chrome.management.getSelf = function(opt_callback) {};
+chrome.management.getAll = function(opt_callback) {};
 
 
 /**
@@ -3701,6 +3690,14 @@ chrome.management.getPermissionWarningsById = function(id, opt_callback) {};
  */
 chrome.management.getPermissionWarningsByManifest =
     function(manifestStr, opt_callback) {};
+
+
+/**
+ * @param {string} id The id of an already installed extension.
+ * @param {function(): void=} opt_callback Optional callback function.
+ * @return {undefined}
+ */
+chrome.management.launchApp = function(id, opt_callback) {};
 
 
 /**
@@ -3740,14 +3737,6 @@ chrome.management.uninstallSelf =
  * @param {function(): void=} opt_callback Optional callback function.
  * @return {undefined}
  */
-chrome.management.launchApp = function(id, opt_callback) {};
-
-
-/**
- * @param {string} id The id of an already installed extension.
- * @param {function(): void=} opt_callback Optional callback function.
- * @return {undefined}
- */
 chrome.management.createAppShortcut = function(id, opt_callback) {};
 
 
@@ -3774,11 +3763,7 @@ chrome.management.generateAppForLink = function(url, title, opt_callback) {};
 
 
 /** @type {!ChromeExtensionInfoEvent} */
-chrome.management.onInstalled;
-
-
-/** @type {!ChromeStringEvent} */
-chrome.management.onUninstalled;
+chrome.management.onDisabled;
 
 
 /** @type {!ChromeExtensionInfoEvent} */
@@ -3786,7 +3771,11 @@ chrome.management.onEnabled;
 
 
 /** @type {!ChromeExtensionInfoEvent} */
-chrome.management.onDisabled;
+chrome.management.onInstalled;
+
+
+/** @type {!ChromeStringEvent} */
+chrome.management.onUninstalled;
 
 
 /**
@@ -4733,87 +4722,6 @@ chrome.permissions.onAdded;
 
 /** @type {!ChromeEvent} */
 chrome.permissions.onRemoved;
-
-
-/**
- *  @see https://developer.chrome.com/extensions/platformKeys
- */
-chrome.platformKeys = {};
-
-
-/**
- * @see https://developer.chrome.com/extensions/platformKeys#type-Match
- * @constructor
- */
-chrome.platformKeys.Match = function() {};
-
-
-/** @type {!ArrayBuffer} */
-chrome.platformKeys.Match.prototype.certificate;
-
-
-/** @type {!Object} */
-chrome.platformKeys.Match.prototype.keyAlgorithm;
-
-
-/**
- * @typedef {?{
- *   certificateTypes: !Array<string>,
- *   certificateAuthorities: !Array<!ArrayBuffer>
- * }}
- */
-chrome.platformKeys.SelectCertificateDetailRequest;
-
-
-/**
- * @typedef {?{
- *   request: !chrome.platformKeys.SelectCertificateDetailRequest,
- *   clientCerts: (!Array<!ArrayBuffer>|undefined),
- *   interactive: boolean
- * }}
- *
- * @see https://developer.chrome.com/extensions/platformKeys#method-selectClientCertificates
- */
-chrome.platformKeys.SelectCertificateDetails;
-
-
-/**
- * @param {!chrome.platformKeys.SelectCertificateDetails} details
- * @param {!function(!Array<!chrome.platformKeys.Match>)} callback
- */
-chrome.platformKeys.selectClientCertificates = function(details, callback) {};
-
-
-/**
- * @param {!ArrayBuffer} certificate
- * @param {!Object} parameters
- * @param {!function(!Object, ?Object)} callback
- */
-chrome.platformKeys.getKeyPair = function(certificate, parameters, callback) {};
-
-
-/**
- * @return {!Object}
- */
-chrome.platformKeys.subtleCrypto = function() {};
-
-
-/**
- * @typedef {?{
- *   serverCertificateChain: !Array<!ArrayBuffer>,
- *   hostname: string
- * }}
- *
- * @see https://developer.chrome.com/extensions/platformKeys#method-verifyTLSServerCertificate
- */
-chrome.platformKeys.VerifyServerCertificateDetails;
-
-
-/**
- * @param {!chrome.platformKeys.VerifyServerCertificateDetails} details
- * @param {!function(!Object)} callback
- */
-chrome.platformKeys.verifyTLSServerCertificate = function(details, callback) {};
 
 
 /**

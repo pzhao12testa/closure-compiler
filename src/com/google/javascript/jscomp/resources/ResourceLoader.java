@@ -20,7 +20,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.google.common.annotations.GwtIncompatible;
 import com.google.common.io.CharStreams;
-import com.google.javascript.jscomp.ConformanceConfig;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
@@ -41,19 +40,6 @@ public final class ResourceLoader {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-  }
-
-  /** Load the global ConformanceConfig */
-  public static ConformanceConfig loadGlobalConformance(Class<?> clazz) {
-    ConformanceConfig.Builder builder = ConformanceConfig.newBuilder();
-    if (resourceExists(clazz, "global_conformance.binarypb")) {
-      try {
-        builder.mergeFrom(clazz.getResourceAsStream("global_conformance.binarypb"));
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    }
-    return builder.build();
   }
 
   public static boolean resourceExists(Class<?> clazz, String path) {

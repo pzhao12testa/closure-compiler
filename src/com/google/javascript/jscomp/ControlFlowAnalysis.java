@@ -546,13 +546,9 @@ public final class ControlFlowAnalysis implements Callback, CompilerPass {
         case CASE:
         case TRY:
           break;
-        case ROOT:
-          if (node.isRoot() && node.getNext() != null) {
-            createEdge(node, Branch.UNCOND, node.getNext());
-          }
-          break;
         default:
-          if (node.isNormalBlock() && node.isSyntheticBlock()) {
+          if ((node.isNormalBlock() && node.isSyntheticBlock())
+              || node.isRoot()) { // TODO(blickly): Stop creating this edge for ROOT nodes
             createEdge(node, Branch.SYN_BLOCK, computeFollowNode(node, this));
           }
           break;

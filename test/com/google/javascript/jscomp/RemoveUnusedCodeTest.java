@@ -849,9 +849,7 @@ public final class RemoveUnusedCodeTest extends CompilerTestCase {
   }
 
   public void testUnusedPropAssign5() {
-    test(
-        "var x = {foo: alert()}; x['foo'] = 5;", // preserve newline
-        "       ({foo: alert()})             ;");
+    testSame("var x = {foo: alert()}; x['foo'] = 5;");
   }
 
   public void testUnusedPropAssign6() {

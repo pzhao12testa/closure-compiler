@@ -107,7 +107,7 @@ Iterable.prototype[Symbol.iterator] = function() {};
 function Iterator() {}
 
 /**
- * @param {?=} opt_value
+ * @param {VALUE=} value
  * @return {!IIterableResult<VALUE>}
  */
 Iterator.prototype.next;

@@ -4786,7 +4786,7 @@ final class NewTypeInference implements CompilerPass {
         new QualifiedName(commonTypes.createSetterPropName(pname.getLeftmostName()));
     if (recvType.hasProp(setterPname)) {
       FunctionType funType = recvType.getProp(setterPname).getFunType();
-      checkNotNull(funType, "recvType=%s, setterPname=%s", recvType, setterPname);
+      checkNotNull(funType);
       JSType formalType = funType.getFormalType(0);
       checkState(!formalType.isBottom());
       return new LValueResultFwd(inEnv, formalType, formalType, null);
@@ -4836,17 +4836,17 @@ final class NewTypeInference implements CompilerPass {
     }
   }
 
+  private LValueResultBwd analyzeLValueBwd(
+      Node expr, TypeEnv outEnv, JSType type, boolean doSlicing) {
+    return analyzeLValueBwd(expr, outEnv, type, doSlicing, false);
+  }
+
   /**
    * We use this to avoid putting global variables in type environments, because that
    * can cause crashes in TypeEnv#join.
    */
   private boolean isGlobalVariable(Node maybeName, TypeEnv env) {
     return maybeName.isName() && envGetType(env, maybeName.getString()) == null;
-  }
-
-  private LValueResultBwd
-      analyzeLValueBwd(Node expr, TypeEnv outEnv, JSType type, boolean doSlicing) {
-    return analyzeLValueBwd(expr, outEnv, type, doSlicing, false);
   }
 
   /** When {@code doSlicing} is set, remove the lvalue from the returned env */

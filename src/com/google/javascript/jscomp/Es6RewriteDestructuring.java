@@ -17,7 +17,6 @@ package com.google.javascript.jscomp;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.javascript.jscomp.Es6ToEs3Util.arrayFromIterator;
 import static com.google.javascript.jscomp.Es6ToEs3Util.makeIterator;
 
 import com.google.javascript.jscomp.parsing.parser.FeatureSet;
@@ -129,7 +128,9 @@ public final class Es6RewriteDestructuring implements NodeTraversal.Callback, Ho
         } else if (defaultValue.isVoid()) {
           // Any kind of 'void literal' is fine, but 'void fun()' or anything
           // else with side effects isn't.  We're not trying to be particularly
-          // smart here and treat 'void {}' for example as if it could cause side effects.
+          // smart here and treat 'void {}' for example as if it could cause
+          // side effects.  Any sane person will type 'name=undefined' or
+          // 'name=void 0' so this should not be an issue.
           isNoop = NodeUtil.isImmutableValue(defaultValue.getFirstChild());
         }
 
@@ -349,12 +350,8 @@ public final class Es6RewriteDestructuring implements NodeTraversal.Callback, Ho
   }
 
   /**
-   * Convert <pre>var [x, y] = rhs<pre> to:
-   * <pre>
-   *   var temp = $jscomp.makeIterator(rhs);
-   *   var x = temp.next().value;
-   *   var y = temp.next().value;
-   * </pre>
+   * Convert 'var [x, y] = rhs' to: var temp = $jscomp.makeIterator(rhs); var x = temp.next().value;
+   * var y = temp.next().value;
    */
   private void replaceArrayPattern(
       NodeTraversal t, Node arrayPattern, Node rhs, Node parent, Node nodeToDetach) {
@@ -364,6 +361,7 @@ public final class Es6RewriteDestructuring implements NodeTraversal.Callback, Ho
         makeIterator(compiler, rhs.detach()));
     tempDecl.useSourceInfoIfMissingFromForTree(arrayPattern);
     nodeToDetach.getParent().addChildBefore(tempDecl, nodeToDetach);
+    boolean needsRuntime = false;
 
     for (Node child = arrayPattern.getFirstChild(), next; child != null; child = next) {
       next = child.getNext();
@@ -400,7 +398,11 @@ public final class Es6RewriteDestructuring implements NodeTraversal.Callback, Ho
         //   var temp = $jscomp.makeIterator(rhs);
         //   x = $jscomp.arrayFromIterator(temp);
         newLHS = child.getFirstChild().detach();
-        newRHS = arrayFromIterator(compiler, IR.name(tempVarName));
+        newRHS =
+            IR.call(
+                NodeUtil.newQName(compiler, "$jscomp.arrayFromIterator"),
+                IR.name(tempVarName));
+        needsRuntime = true;
       } else {
         // LHS is just a name (or a nested pattern).
         //   var [x] = rhs;
@@ -426,8 +428,11 @@ public final class Es6RewriteDestructuring implements NodeTraversal.Callback, Ho
       // destructuring pattern.
       visit(t, newLHS, newLHS.getParent());
     }
-
     nodeToDetach.detach();
+
+    if (needsRuntime) {
+      compiler.ensureLibraryInjected("es6/util/arrayfromiterator", false);
+    }
     t.reportCodeChange();
   }
 

@@ -13,10 +13,7 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
-  >
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.google.javascript</groupId>
   <artifactId>closure-compiler-parent</artifactId>
@@ -137,7 +134,7 @@
     <project.build.outputEncoding>UTF-8</project.build.outputEncoding>
     <jdk.version>1.8</jdk.version>
     <junit.version>4.12</junit.version>
-    <guava.version>22.0</guava.version>
+    <guava.version>20.0</guava.version>
     <protobuf.version>3.0.2</protobuf.version>
   </properties>
 
@@ -255,3 +252,4 @@
     </profile>
   </profiles>
 </project>
+

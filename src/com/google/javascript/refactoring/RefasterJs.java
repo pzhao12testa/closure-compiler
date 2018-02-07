@@ -123,7 +123,6 @@ final class RefasterJs {
             .addInputsFromFile(fileInputs)
             .build();
     System.out.println("Compiling JavaScript code and searching for suggested fixes.");
-    // TODO(bangert): allow picking a non-default choice in RefasterJS, e.g. via a switch.
     List<SuggestedFix> fixes = driver.drive(scanner);
 
     if (!verbose) {

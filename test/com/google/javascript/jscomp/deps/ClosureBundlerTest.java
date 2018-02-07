@@ -19,7 +19,6 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.mockito.Mockito.RETURNS_SMART_NULLS;
 import static org.mockito.Mockito.when;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.javascript.jscomp.transpile.TranspileResult;
 import com.google.javascript.jscomp.transpile.Transpiler;
 import java.io.IOException;
@@ -96,7 +95,7 @@ public final class ClosureBundlerTest extends TestCase {
     new ClosureBundler()
         .useEval(true)
         .appendTo(sb, TRADITIONAL, "\"a string\"");
-    assertThat(sb.toString()).isEqualTo("eval(\"\\x22a string\\x22\");\n");
+    assertThat(sb.toString()).isEqualTo("(0,eval(\"\\x22a string\\x22\"));\n");
   }
 
   public void testTraditionalWithEvalWithSourceUrl() throws IOException {
@@ -106,7 +105,7 @@ public final class ClosureBundlerTest extends TestCase {
         .withSourceUrl("URL")
         .appendTo(sb, TRADITIONAL, "\"a string\"");
     assertThat(sb.toString())
-        .isEqualTo("eval(\"\\x22a string\\x22\\n//# sourceURL\\x3dURL\\n\");\n");
+        .isEqualTo("(0,eval(\"\\x22a string\\x22\\n//# sourceURL\\x3dURL\\n\"));\n");
   }
 
   public void testTranspilation() throws IOException {
@@ -121,10 +120,8 @@ public final class ClosureBundlerTest extends TestCase {
     StringBuilder sb = new StringBuilder();
     bundler.appendRuntimeTo(sb);
     bundler.appendTo(sb, MODULE, input);
-    assertThat(sb.toString()).startsWith("RUNTIME;");
-    // Call endsWith because the ES6 module runtime is also injected.
     assertThat(sb.toString())
-        .endsWith("goog.loadModule(function(exports) {'use strict';TRANSPILED;\n"
+        .isEqualTo("RUNTIME;goog.loadModule(function(exports) {'use strict';TRANSPILED;\n"
             + ";return exports;});\n");
 
     // Without calling appendRuntimeTo(), the runtime is not included anymore.
@@ -133,37 +130,5 @@ public final class ClosureBundlerTest extends TestCase {
     assertThat(sb.toString())
         .isEqualTo("goog.loadModule(function(exports) {'use strict';TRANSPILED;\n"
             + ";return exports;});\n");
-  }
-
-  public void testEs6Module() throws IOException {
-    String input =
-        "import {x} from './other.js';\n"
-            + "export {x as y};"
-            + "var local;\n"
-            + "export function foo() { return local; }\n";
-    ClosureBundler bundler = new ClosureBundler().withPath("foo.js");
-    StringBuilder sb = new StringBuilder();
-    bundler.appendRuntimeTo(sb);
-    bundler.appendTo(
-        sb,
-        SimpleDependencyInfo.builder("", "").setLoadFlags(ImmutableMap.of("module", "es6")).build(),
-        input);
-    String result = sb.toString();
-    // ES6 module runtime should be injected.
-    assertThat(result).contains("$jscomp.require = createRequire();");
-    assertThat(sb.toString())
-        .endsWith(
-            "$jscomp.registerAndLoadModule(function($$require, $$exports, $$module) {\n"
-                + "  Object.defineProperties($$exports, {foo:{enumerable:true, get:function() {\n"
-                + "    return foo;\n"
-                + "  }}, y:{enumerable:true, get:function() {\n"
-                + "    return module$other.x;\n"
-                + "  }}});\n"
-                + "  var module$other = $$require(\"./other.js\");\n"
-                + "  var local;\n"
-                + "  function foo() {\n"
-                + "    return local;\n"
-                + "  }\n"
-                + "}, \"foo.js\", [\"./other.js\"]);\n");
   }
 }

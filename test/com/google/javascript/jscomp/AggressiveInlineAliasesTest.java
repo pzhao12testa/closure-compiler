@@ -64,8 +64,9 @@ public class AggressiveInlineAliasesTest extends CompilerTestCase {
             "/** @constructor */",
             "function f() {",
             "  for(; true; ) {",
-            "    var b = null;",
-            "    alert(a.b.staticProp); } }"));
+            "    var b = a.b;",
+            "    alert(b.staticProp); } }"),
+        warning(AggressiveInlineAliases.UNSAFE_CTOR_ALIASING));
   }
 
   public void test_b19179602_declareOutsideLoop() {
@@ -117,18 +118,6 @@ public class AggressiveInlineAliasesTest extends CompilerTestCase {
             "}"));
   }
 
-  public void testGlobalCtorAliasedMultipleTimes() {
-    // TODO(lharker): Also warn for unsafe global ctor aliasing
-    testSame(
-        lines(
-            "/** @constructor */",
-            "function a() {}",
-            "a.staticProp = 5;",
-            "var alias = a;",
-            "use(alias.staticProp);", // Unsafe because a.staticProp becomes a$staticProp.
-            "alias = function() {}"));
-  }
-
   public void testCtorAliasedMultipleTimesWarning1() {
     testSame(
         lines(
@@ -168,24 +157,6 @@ public class AggressiveInlineAliasesTest extends CompilerTestCase {
             "  alias();",
             "  alias = a;",
             "  use(alias.staticProp);", // Unsafe because a.staticProp becomes a$staticProp.
-            "}"),
-        AggressiveInlineAliases.UNSAFE_CTOR_ALIASING);
-  }
-
-  public void testCtorAliasedMultipleTimesWarning4() {
-    testWarning(
-        lines(
-            "/** @constructor */",
-            "function a() {}",
-            "a.staticProp = 5;",
-            "function f() {",
-            "  if (true) {",
-            "    var alias = a;",
-            "    use(alias.staticProp);",
-            "  } else {",
-            "    alias = {staticProp: 34};",
-            "    use(alias.staticProp);",
-            "  }",
             "}"),
         AggressiveInlineAliases.UNSAFE_CTOR_ALIASING);
   }
@@ -348,60 +319,18 @@ public class AggressiveInlineAliasesTest extends CompilerTestCase {
         "var a = { b: 0 };" + "var c = null;" + "a.b = 1;" + "a.b == a.b;" + "use(a);");
   }
 
-  public void testLocalAliasCreatedAfterVarDeclaration1() {
-test(
-    lines(
-            "var a = { b : 3 };",
-            "function f() {",
-            "  var tmp;",
-            "  if (true) {",
-            "    tmp = a;",
-            "    use(tmp);",
-            "  }",
-            "}"),
-               lines(
-                   "var a = { b : 3 };",
-            "function f() {",
-            "  var tmp;",
-            "  if (true) {",
-            "    tmp = null;",
-            "    use(a);",
-            "  }",
-            "}"));
-  }
-
-  public void testLocalAliasCreatedAfterVarDeclaration2() {
-    test(
-        lines(
-            "var a = { b : 3 };",
-            "function f() {",
-            "  var tmp;",
-            "  if (true) {",
-            "    tmp = a;",
-            "    use(tmp);",
-            "  }",
-            "}"),
-        lines(
-            "var a = { b : 3 };",
-            "function f() {",
-            "  var tmp;",
-            "  if (true) {",
-            "    tmp = null;",
-            "    use(a);",
-            "  }",
-            "}"));
-  }
-
-  public void testLocalAliasCreatedAfterVarDeclaration3() {
+  public void testLocalNonCtorAliasCreatedAfterVarDeclaration1() {
+    // We only inline non-constructor local aliases if they are assigned upon declaration.
+    // TODO(lharker): We should be able to inline these. InlineVariables does, and it also
+    // uses ReferenceCollectingCallback to track references.
     testSame(
         lines(
-            "var a = { b : 3 };",
+            "var Main = {};",
+            "Main.doSomething = function(i) {}",
             "function f() {",
             "  var tmp;",
-            "  if (true) {",
-            "    tmp = a;",
-            "  }",
-            "  use(tmp);",
+            "  tmp = Main;",
+            "  tmp.doSomething(5);",
             "}"));
   }
 
@@ -496,7 +425,7 @@ test(
   }
 
   public void testLocalCtorAliasAssignedInLoop1() {
-    testWarning(
+    test(
         lines(
             "/** @constructor @struct */ var Main = function() {};",
             "Main.doSomething = function(i) {}",
@@ -510,13 +439,25 @@ test(
             "  use(tmp);",
             "  use(tmp.doSomething);",
             "}"),
-        AggressiveInlineAliases.UNSAFE_CTOR_ALIASING);
+        lines(
+            "/** @constructor @struct */ var Main = function() {};",
+            "Main.doSomething = function(i) {}",
+            "function f() {",
+            "  var tmp;",
+            "  for (let i = 0; i < n(); i++) {",
+            "    tmp = Main;",
+            "    Main.doSomething(5);",
+            "    use(Main);",
+            "  }",
+            "  use(tmp);",
+            "  use(tmp.doSomething);", // This line may break if Main$doSomething is collapsed.
+            "}"));
   }
 
 
   public void testLocalCtorAliasAssignedInLoop2() {
     // Test when the alias is assigned in a loop after being used.
-    testWarning(
+    testSame(
         lines(
             "/** @constructor @struct */ var Main = function() {};",
             "Main.doSomething = function(i) {}",
@@ -528,8 +469,7 @@ test(
             "  }",
             "  use(tmp);",
             "  use(tmp.doSomething);",
-            "}"),
-        AggressiveInlineAliases.UNSAFE_CTOR_ALIASING);
+            "}"));
   }
 
   public void testLocalCtorAliasAssignedInSwitchCase() {
@@ -904,10 +844,6 @@ test(
     test(
         "var a = { b: 3 };" + "function f() { a.b = 5;" + "var x = a;" + "f(a.b);" + "}",
         "var a = { b: 3 };" + "function f() { a.b = 5;" + "var x = null;" + "f(a.b);" + "}");
-  }
-
-  public void testLocalAliasInChainedAssignment() {
-    testSame("var a = { b: 3 }; function f() { var c; var d = c = a; a.b; d.b; }");
   }
 
   public void testMisusedConstructorTag() {

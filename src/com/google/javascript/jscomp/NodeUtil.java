@@ -1235,7 +1235,6 @@ public final class NodeUtil {
       case TRY:
       case EMPTY:
       case TEMPLATELIT:
-      case COMPUTED_PROP:
         break;
 
       default:
@@ -1763,7 +1762,6 @@ public final class NodeUtil {
     }
   }
 
-  /** @see #getKnownValueType(Node) */
   public enum ValueType {
     UNDETERMINED,
     NULL,
@@ -3762,21 +3760,13 @@ public final class NodeUtil {
     return addingRoot;
   }
 
-  public static Node newDeclaration(Node lhs, @Nullable Node rhs, Token declarationType) {
-    if (rhs == null) {
-      return IR.declaration(lhs, declarationType);
-    }
-    return IR.declaration(lhs, rhs, declarationType);
-  }
-
   /**
    * Creates a node representing a qualified name.
    *
    * @param name A qualified name (e.g. "foo" or "foo.bar.baz")
    * @return A NAME or GETPROP node
    */
-  public static Node newQName(
-      AbstractCompiler compiler, String name) {
+  public static Node newQName(AbstractCompiler compiler, String name) {
     int endPos = name.indexOf('.');
     if (endPos == -1) {
       return newName(compiler, name);
@@ -3805,33 +3795,6 @@ public final class NodeUtil {
       node.setLength(length);
     } while (endPos != -1);
 
-    return node;
-  }
-
-  /**
-   * Creates a node representing a qualified name, copying over the source
-   * location information from the basis node and assigning the given original
-   * name to the node.
-   *
-   * @param name A qualified name (e.g. "foo" or "foo.bar.baz")
-   * @param basisNode The node that represents the name as currently found in
-   *     the AST.
-   * @param originalName The original name of the item being represented by the
-   *     NAME node. Used for debugging information.
-   *
-   * @return A NAME or GETPROP node
-   */
-  static Node newQName(
-      AbstractCompiler compiler, String name, Node basisNode,
-      String originalName) {
-    Node node = newQName(compiler, name);
-    useSourceInfoForNewQName(node, basisNode);
-    if (!originalName.equals(node.getOriginalName())) {
-      // If basisNode already had the correct original name, then it will already be set correctly.
-      // Setting it again will force the QName node to have a different property list from all of
-      // its children, causing greater memory consumption.
-      node.setOriginalName(originalName);
-    }
     return node;
   }
 
@@ -3867,6 +3830,33 @@ public final class NodeUtil {
       result.getFirstChild().setJSDocInfo(info);
     }
     return result;
+  }
+
+  /**
+   * Creates a node representing a qualified name, copying over the source
+   * location information from the basis node and assigning the given original
+   * name to the node.
+   *
+   * @param name A qualified name (e.g. "foo" or "foo.bar.baz")
+   * @param basisNode The node that represents the name as currently found in
+   *     the AST.
+   * @param originalName The original name of the item being represented by the
+   *     NAME node. Used for debugging information.
+   *
+   * @return A NAME or GETPROP node
+   */
+  static Node newQName(
+      AbstractCompiler compiler, String name, Node basisNode,
+      String originalName) {
+    Node node = newQName(compiler, name);
+    useSourceInfoForNewQName(node, basisNode);
+    if (!originalName.equals(node.getOriginalName())) {
+      // If basisNode already had the correct original name, then it will already be set correctly.
+      // Setting it again will force the QName node to have a different property list from all of
+      // its children, causing greater memory consumption.
+      node.setOriginalName(originalName);
+    }
+    return node;
   }
 
   /**

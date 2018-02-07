@@ -46,10 +46,6 @@ public final class CodePrinterTest extends CodePrinterTestBase {
     // parens are not needed for a unary operator on the right operand
     assertPrint("x**(-y)", "x**-y");
     // NOTE: "-x**y" is a syntax error tested in ParserTest
-
-    // ** has a higher precedence than /
-    assertPrint("x/(y**z)", "x/y**z");
-    assertPrintSame("(x/y)**z");
   }
 
   public void testExponentiationAssignmentOperator() {

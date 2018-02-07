@@ -35,7 +35,6 @@ import com.google.javascript.jscomp.CheckConformance.Rule;
 import com.google.javascript.jscomp.CodingConvention.AssertionFunctionSpec;
 import com.google.javascript.jscomp.ConformanceRules.AbstractRule;
 import com.google.javascript.jscomp.ConformanceRules.ConformanceResult;
-import com.google.javascript.jscomp.Requirement.Severity;
 import com.google.javascript.jscomp.Requirement.Type;
 import com.google.javascript.jscomp.parsing.JsDocInfoParser;
 import com.google.javascript.rhino.FunctionTypeI;
@@ -123,13 +122,11 @@ public final class ConformanceRules {
   public abstract static class AbstractRule implements Rule {
     final AbstractCompiler compiler;
     final String message;
-    final Severity severity;
     final ImmutableList<String> whitelist;
     final ImmutableList<String> onlyApplyTo;
     @Nullable final Pattern whitelistRegexp;
     @Nullable final Pattern onlyApplyToRegexp;
     final boolean reportLooseTypeViolations;
-    final TypeMatchingStrategy typeMatchingStrategy;
 
     public AbstractRule(AbstractCompiler compiler, Requirement requirement)
         throws InvalidRequirementSpec {
@@ -138,11 +135,6 @@ public final class ConformanceRules {
       }
       this.compiler = compiler;
       message = requirement.getErrorMessage();
-      if (requirement.getSeverity() == Severity.UNSPECIFIED) {
-        severity = Severity.WARNING;
-      } else {
-        severity = requirement.getSeverity();
-      }
       whitelist = ImmutableList.copyOf(requirement.getWhitelistList());
       whitelistRegexp = buildPattern(
           requirement.getWhitelistRegexpList());
@@ -150,22 +142,6 @@ public final class ConformanceRules {
       onlyApplyToRegexp = buildPattern(
           requirement.getOnlyApplyToRegexpList());
       reportLooseTypeViolations = requirement.getReportLooseTypeViolations();
-      typeMatchingStrategy = getTypeMatchingStrategy(requirement);
-    }
-
-    private static TypeMatchingStrategy getTypeMatchingStrategy(Requirement requirement) {
-      switch (requirement.getTypeMatchingStrategy()) {
-        case LOOSE:
-          return TypeMatchingStrategy.LOOSE;
-        case STRICT_NULLABILITY:
-          return TypeMatchingStrategy.STRICT_NULLABILITY;
-        case SUBTYPES:
-          return TypeMatchingStrategy.SUBTYPES;
-        case EXACT:
-          return TypeMatchingStrategy.EXACT;
-        default:
-          throw new IllegalStateException("Unknown TypeMatchingStrategy");
-      }
     }
 
     @Nullable
@@ -244,19 +220,9 @@ public final class ConformanceRules {
      */
     protected void report(
         NodeTraversal t, Node n, ConformanceResult result) {
-      DiagnosticType msg;
-      if (severity == Severity.ERROR) {
-        // Always report findings that are errors, even if the types are too loose to be certain.
-        // TODO(bangert): If this causes problems, add another severity category that only
-        // errors when certain.
-        msg = CheckConformance.CONFORMANCE_ERROR;
-      } else {
-        if (result.level == ConformanceLevel.VIOLATION) {
-          msg = CheckConformance.CONFORMANCE_VIOLATION;
-        } else {
-          msg = CheckConformance.CONFORMANCE_POSSIBLE_VIOLATION;
-        }
-      }
+      DiagnosticType msg = (result.level == ConformanceLevel.VIOLATION)
+          ? CheckConformance.CONFORMANCE_VIOLATION
+          : CheckConformance.CONFORMANCE_POSSIBLE_VIOLATION;
       String separator = (result.note.isEmpty())
           ? ""
           : "\n";
@@ -900,17 +866,24 @@ public final class ConformanceRules {
       return ConformanceResult.CONFORMANCE;
     }
 
+    private boolean matchesProp(Node n, Restriction r) {
+      return n.isGetProp() && n.getLastChild().getString().equals(r.property);
+    }
+
     private ConformanceResult checkConformance(
         NodeTraversal t, Node n, Restriction r, boolean isCallInvocation) {
       TypeIRegistry registry = t.getCompiler().getTypeIRegistry();
       TypeI methodClassType = registry.getType(r.type);
-      Node lhs = isCallInvocation ? n.getFirstFirstChild() : n.getFirstChild();
+      Node lhs = isCallInvocation
+          ? n.getFirstFirstChild()
+          : n.getFirstChild();
       if (methodClassType != null && lhs.getTypeI() != null) {
         TypeI targetType = lhs.getTypeI().restrictByNotNullOrUndefined();
         if (targetType.isUnknownType()
-            || targetType.isUnresolved()
-            || targetType.isTop()
-            || targetType.isEquivalentTo(registry.getNativeType(JSTypeNative.OBJECT_TYPE))) {
+           || targetType.isUnresolved()
+           || targetType.isTop()
+           || targetType.isEquivalentTo(
+               registry.getNativeType(JSTypeNative.OBJECT_TYPE))) {
           if (reportLooseTypeViolations
               && !ConformanceUtil.validateCall(
                   compiler, n.getParent(), r.restrictedCallType, isCallInvocation)) {
@@ -924,10 +897,6 @@ public final class ConformanceRules {
         }
       }
       return ConformanceResult.CONFORMANCE;
-    }
-
-    private boolean matchesProp(Node n, Restriction r) {
-      return n.isGetProp() && n.getLastChild().getString().equals(r.property);
     }
 
     /**
@@ -1002,7 +971,8 @@ public final class ConformanceRules {
         }
         Node templateRoot = parseRoot.getFirstChild();
         TemplateAstMatcher astMatcher =
-            new TemplateAstMatcher(compiler.getTypeIRegistry(), templateRoot, typeMatchingStrategy);
+            new TemplateAstMatcher(
+                compiler.getTypeIRegistry(), templateRoot, TypeMatchingStrategy.LOOSE);
         builder.add(astMatcher);
       }
 

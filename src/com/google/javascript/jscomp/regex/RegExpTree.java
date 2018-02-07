@@ -1460,6 +1460,15 @@ public abstract class RegExpTree {
       return new DecomposedCharset(inverted, ranges, namedGroups.toString());
     }
 
+    @Override
+    protected void appendSourceCode(StringBuilder sb) {
+      if (DOT_CHARSET.ranges.equals(ranges)) {
+        sb.append('.');
+        return;
+      }
+      decompose().appendSourceCode(sb);
+    }
+
     DecomposedCharset decompose() {
       CharRanges negRanges = CharRanges.ALL_CODE_UNITS.difference(ranges);
       if (!ieExplicits.isEmpty()) {
@@ -1471,16 +1480,8 @@ public abstract class RegExpTree {
       }
       DecomposedCharset positive = decompose(ranges, false);
       DecomposedCharset negative = decompose(negRanges, true);
-      return positive.complexity() <= negative.complexity() ? positive : negative;
-    }
-
-    @Override
-    protected void appendSourceCode(StringBuilder sb) {
-      if (DOT_CHARSET.ranges.equals(ranges)) {
-        sb.append('.');
-        return;
-      }
-      decompose().appendSourceCode(sb);
+      return positive.complexity() <= negative.complexity()
+          ? positive : negative;
     }
 
     @Override

@@ -224,9 +224,6 @@ class PhaseOptimizer implements CompilerPass {
     // reference to it is retained in PhaseOptimizer:
     //   factory.create(compiler).process(externs, root);
     for (CompilerPass pass : passes) {
-      if (Thread.interrupted()) {
-        throw new RuntimeException(new InterruptedException());
-      }
       pass.process(externs, root);
       if (hasHaltingErrors()) {
         return;

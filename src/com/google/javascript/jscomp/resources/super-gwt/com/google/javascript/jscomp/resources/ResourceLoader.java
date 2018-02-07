@@ -19,7 +19,6 @@ package com.google.javascript.jscomp.resources;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.resources.client.ClientBundle;
 import com.google.gwt.resources.client.TextResource;
-import com.google.javascript.jscomp.ConformanceConfig;
 import jsinterop.annotations.JsMethod;
 
 /**
@@ -44,10 +43,6 @@ public final class ResourceLoader {
       return content;
     }
     throw new RuntimeException("Resource not found: " + path);
-  }
-
-  public static ConformanceConfig loadGlobalConformance(Class<?> clazz) {
-    return ConformanceConfig.newBuilder().build();
   }
 
   public static boolean resourceExists(Class<?> clazz, String path) {

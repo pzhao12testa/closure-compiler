@@ -68,14 +68,15 @@ class LintPassConfig extends PassConfig.PassConfigDelegate {
                   new CheckJSDocStyle(compiler),
                   new CheckJSDoc(compiler),
                   new CheckMissingSemicolon(compiler),
-                  new CheckSuper(compiler),
+                  new CheckMissingSuper(compiler),
                   new CheckPrimitiveAsObject(compiler),
                   new ClosureCheckModule(compiler),
                   new CheckRequiresAndProvidesSorted(compiler),
                   new CheckSideEffects(
                       compiler, /* report */ true, /* protectSideEffectFreeCode */ false),
                   new CheckUnusedLabels(compiler),
-                  new CheckUselessBlocks(compiler)));
+                  new CheckUselessBlocks(compiler),
+                  new Es6SuperCheck(compiler)));
         }
 
         @Override

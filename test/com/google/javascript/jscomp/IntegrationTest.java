@@ -709,30 +709,6 @@ public final class IntegrationTest extends IntegrationTestCase {
             "var foo$Bar = function() {};"));
   }
 
-  @GwtIncompatible // b/63595345
-  public void testTypedefProvides() {
-    CompilerOptions options = createCompilerOptions();
-    CompilationLevel.ADVANCED_OPTIMIZATIONS.setOptionsForCompilationLevel(options);
-    test(
-        options,
-        lines(
-            "goog.provide('ns');",
-            "goog.provide('ns.SomeType');",
-            "goog.provide('ns.SomeType.EnumValue');",
-            "goog.provide('ns.SomeType.defaultName');",
-            // subnamespace assignment happens before parent.
-            "/** @enum {number} */",
-            "ns.SomeType.EnumValue = { A: 1, B: 2 };",
-            // parent namespace isn't ever actually assigned.
-            // we're relying on goog.provide to provide it.
-            "/** @typedef {{name: string, value: ns.SomeType.EnumValue}} */",
-            "ns.SomeType;",
-            "/** @const {string} */",
-            "ns.SomeType.defaultName = 'foobarbaz';"),
-        // the provides should be rewritten, then collapsed, then removed by RemoveUnusedCode
-        "");
-  }
-
   public void testExportedNames() {
     CompilerOptions options = createCompilerOptions();
     options.setClosurePass(true);
@@ -1711,6 +1687,22 @@ public final class IntegrationTest extends IntegrationTestCase {
     test(options, testCode, "");
   }
 
+  public void testChainedCalls() {
+    CompilerOptions options = createCompilerOptions();
+    options.chainCalls = true;
+    test(
+        options,
+        "/** @constructor */ function Foo() {} " +
+        "Foo.prototype.bar = function() { return this; }; " +
+        "var f = new Foo();" +
+        "f.bar(); " +
+        "f.bar(); ",
+        "function Foo() {} " +
+        "Foo.prototype.bar = function() { return this; }; " +
+        "var f = new Foo();" +
+        "f.bar().bar();");
+  }
+
   public void testExtraAnnotationNames() {
     CompilerOptions options = createCompilerOptions();
     options.setExtraAnnotationNames(ImmutableSet.of("TagA", "TagB"));
@@ -2052,13 +2044,13 @@ public final class IntegrationTest extends IntegrationTestCase {
     test(options, code, "");
   }
 
-  public void testRemoveUnusedClass() {
+  public void testSmartNamePass() {
     CompilerOptions options = createCompilerOptions();
-    CompilationLevel.ADVANCED_OPTIMIZATIONS.setOptionsForCompilationLevel(options);
-    String code =
-        lines(
-            "/** @constructor */ function Foo() { this.bar(); }",
-            "Foo.prototype.bar = function() { return new Foo(); };");
+    String code = "function Foo() { this.bar(); } " +
+        "Foo.prototype.bar = function() { return Foo(); };";
+    testSame(options, code);
+
+    options.setSmartNameRemoval(true);
     test(options, code, "");
   }
 
@@ -3511,46 +3503,6 @@ public final class IntegrationTest extends IntegrationTestCase {
                   "x = 1, y = 3; {START(); {z = 3} END()} f()");
   }
 
-  /**
-   * Make sure this doesn't compile to code containing <pre>a: break a;</pre> which doesn't work
-   * properly on some versions of Edge. See b/72667630.
-   */
-  public void testNoSelfReferencingBreakWithSyntheticBlocks() {
-    CompilerOptions options = createCompilerOptions();
-    CompilationLevel.ADVANCED_OPTIMIZATIONS.setOptionsForCompilationLevel(options);
-    options.setWarningLevel(DiagnosticGroups.UNDEFINED_VARIABLES, CheckLevel.OFF);
-    options.syntheticBlockStartMarker = "START";
-    options.syntheticBlockEndMarker = "END";
-    test(
-        options,
-        lines(
-            "const D = false;",
-            "/**",
-            " * @param {string} m",
-            " */",
-            "function b(m) {",
-            " if (!D) return;",
-            "",
-            " START('debug');",
-            " alert('Shouldnt be here' + m);",
-            " END('debug');",
-            "}",
-            "/**",
-            " * @param {string} arg",
-            " */",
-            "function a(arg) {",
-            "  if (arg == 'log') {",
-            "    b('logging 1');",
-            "    b('logging 2');",
-            "  } else {",
-            "    alert('Hi!');",
-            "  }",
-            "}",
-            "",
-            "a(input);"),
-        "'log' != input && alert('Hi!')");
-  }
-
   public void testBug5786871() {
     CompilerOptions options = createCompilerOptions();
     options.setIdeMode(true);
@@ -3625,26 +3577,20 @@ public final class IntegrationTest extends IntegrationTestCase {
   // http://blickly.github.io/closure-compiler-issues/#284
   public void testIssue284() {
     CompilerOptions options = createCompilerOptions();
-    CompilationLevel.ADVANCED_OPTIMIZATIONS.setOptionsForCompilationLevel(options);
+    options.setSmartNameRemoval(true);
     test(
         options,
-        lines(
-            "var goog = {};",
-            "goog.inherits = function(x, y) {};",
-            "var ns = {};",
-            "/**",
-            " * @constructor",
-            " * @extends {ns.PageSelectionModel.FooEvent}",
-            " */",
-            "ns.PageSelectionModel.ChangeEvent = function() {};",
-            "/** @constructor */",
-            "ns.PageSelectionModel = function() {};",
-            "/** @constructor */",
-            "ns.PageSelectionModel.FooEvent = function() {};",
-            "/** @constructor */",
-            "ns.PageSelectionModel.SelectEvent = function() {};",
-            "goog.inherits(ns.PageSelectionModel.ChangeEvent,",
-            "    ns.PageSelectionModel.FooEvent);"),
+        "var goog = {};"
+        + "goog.inherits = function(x, y) {};"
+        + "var ns = {};"
+        + "/** @constructor */"
+        + "ns.PageSelectionModel = function() {};"
+        + "/** @constructor */"
+        + "ns.PageSelectionModel.FooEvent = function() {};"
+        + "/** @constructor */"
+        + "ns.PageSelectionModel.SelectEvent = function() {};"
+        + "goog.inherits(ns.PageSelectionModel.ChangeEvent,"
+        + "    ns.PageSelectionModel.FooEvent);",
         "");
   }
 
@@ -3886,16 +3832,16 @@ public final class IntegrationTest extends IntegrationTestCase {
     test(options, code, "_.f = function() { return 3; }; _.x = _.f;");
   }
 
+
   public void testBrokenNameSpace() {
     CompilerOptions options = createCompilerOptions();
-    CompilationLevel.ADVANCED_OPTIMIZATIONS.setOptionsForCompilationLevel(options);
-    String code =
-        lines(
-            "var goog; goog.provide('i.am.on.a.Horse');",
-            "i.am.on.a.Horse = function() {};",
-            "i.am.on.a.Horse.prototype.x = function() {};",
-            "i.am.on.a.Boat = function() {};",
-            "i.am.on.a.Boat.prototype.y = function() {}");
+    String code = "var goog; goog.provide('i.am.on.a.Horse');" +
+                  "i.am.on.a.Horse = function() {};" +
+                  "i.am.on.a.Horse.prototype.x = function() {};" +
+                  "i.am.on.a.Boat.prototype.y = function() {}";
+    options.setClosurePass(true);
+    options.setCollapsePropertiesLevel(PropertyCollapseLevel.ALL);
+    options.setSmartNameRemoval(true);
     test(options, code, "");
   }
 
@@ -4281,23 +4227,6 @@ public final class IntegrationTest extends IntegrationTestCase {
     test(options, code, "");
   }
 
-  public void testGoogDefineClassWithNti() {
-    CompilerOptions options = createCompilerOptions();
-    options.setNewTypeInference(true);
-    options.setClosurePass(true);
-
-    String code = lines(
-        "var Foo = goog.defineClass(null,",
-        "  {",
-        "    statics: {",
-        "      a: /** @type {number} */ ('asdf')",
-        "    },",
-        "    constructor: function() {}",
-        "  });");
-
-    test(options, code, NewTypeInference.INVALID_CAST);
-  }
-
   public void testCheckConstants1() {
     CompilerOptions options = createCompilerOptions();
     CompilationLevel level = CompilationLevel.SIMPLE_OPTIMIZATIONS;
@@ -4352,19 +4281,8 @@ public final class IntegrationTest extends IntegrationTestCase {
     compile(options, code);
   }
 
-  // Due to JsFileParse not being supported in the JS version, the dependency parsing delegates to
-  // the {@link CompilerInput$DepsFinder} class which is incompatible with the
-  // DefaultCodingConvention due to it throwing on methods such as extractIsModuleFile which is
-  // needed in {@link CompilerInput$DepsFinder#visitSubtree}. Disable this test in the JsVersion.
-  // TODO(tdeegan): DepsFinder should error out early if run with DefaultCodingConvention.
-  @GwtIncompatible
-  public void testES6UnusedClassesAreRemovedDefaultCodingConvention() {
-    testES6UnusedClassesAreRemoved(CodingConventions.getDefault());
-  }
-
   // Tests that unused classes are removed, even if they are passed to $jscomp.inherits.
-  private void
-      testES6UnusedClassesAreRemoved(CodingConvention convention) {
+  private void testES6UnusedClassesAreRemoved(CodingConvention convention) {
     CompilerOptions options = createCompilerOptions();
     options.setLanguageIn(LanguageMode.ECMASCRIPT_2015);
     options.setLanguageOut(LanguageMode.ECMASCRIPT3);
@@ -4376,6 +4294,16 @@ public final class IntegrationTest extends IntegrationTestCase {
         "alert(1);"));
     String result = compiler.toSource(compiler.getJsRoot());
     assertThat(result).isEqualTo("alert(1)");
+  }
+
+  // Due to JsFileParse not being supported in the JS version, the dependency parsing delegates to
+  // the {@link CompilerInput$DepsFinder} class which is incompatible with the
+  // DefaultCodingConvention due to it throwing on methods such as extractIsModuleFile which is
+  // needed in {@link CompilerInput$DepsFinder#visitSubtree}. Disable this test in the JsVersion.
+  // TODO(tdeegan): DepsFinder should error out early if run with DefaultCodingConvention.
+  @GwtIncompatible
+  public void testES6UnusedClassesAreRemovedDefaultCodingConvention() {
+    testES6UnusedClassesAreRemoved(CodingConventions.getDefault());
   }
 
   public void testES6UnusedClassesAreRemoved() {
@@ -4914,53 +4842,6 @@ public final class IntegrationTest extends IntegrationTestCase {
             "}",
             "alert(foo());"),
         "alert(8)");
-  }
-
-  // NOTE(dimvar): the jsdocs are ignored in the comparison of the before/after ASTs. It'd be nice
-  // to test the jsdocs as well, but AFAICT we can only do that in CompilerTestCase, not here.
-  public void testRestParametersWithGenerics() {
-    CompilerOptions options = new CompilerOptions();
-    options.setLanguageIn(LanguageMode.ECMASCRIPT_2017);
-    options.setLanguageOut(LanguageMode.ECMASCRIPT5);
-    options.setCheckTypes(true);
-    test(
-        options,
-        lines(
-            "/**",
-            " * @constructor",
-            " * @template T",
-            " */",
-            "function Foo() {}",
-            "/**",
-            " * @template T",
-            " * @param {...function(!Foo<T>)} x",
-            " */",
-            "function f(...x) {",
-            "  return 123;",
-            "}"),
-        lines(
-            "/**",
-            " * @constructor",
-            " * @template T",
-            " */",
-            "function Foo() {}",
-            "/**",
-            " * @param {...function(!Foo<T>)} x",
-            " * @template T",
-            " */",
-            "function f(x) {",
-            "  var $jscomp$restParams = [];",
-            "  for (var $jscomp$restIndex = 0;",
-            "       $jscomp$restIndex < arguments.length;",
-            "       ++$jscomp$restIndex) {",
-            "         $jscomp$restParams[$jscomp$restIndex - 0] =",
-            "        arguments[$jscomp$restIndex];",
-            "       }",
-            "  {",
-            "    var /** @type {!Array<function(!Foo<?>)>} */ x$0 = $jscomp$restParams;",
-            "    return 123;",
-            "  }",
-            "}"));
   }
 
   public void testDefaultParameters() {

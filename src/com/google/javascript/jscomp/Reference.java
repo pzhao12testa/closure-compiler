@@ -24,10 +24,7 @@ import com.google.javascript.rhino.StaticSourceFile;
 import com.google.javascript.rhino.Token;
 import java.io.Serializable;
 
-/**
- * Represents a single declaration or reference to a variable. Note that references can only be used
- * with untyped scopes and traversals.
- */
+/** Represents a single declaration or reference to a variable. */
 public final class Reference implements StaticRef, Serializable {
 
   private static final ImmutableSet<Token> DECLARATION_PARENTS =
@@ -50,13 +47,6 @@ public final class Reference implements StaticRef, Serializable {
     this(nameNode, basicBlock, t.getScope(), t.getInput().getInputId());
   }
 
-  private Reference(Node nameNode, BasicBlock basicBlock, Scope scope, InputId inputId) {
-    this.nameNode = nameNode;
-    this.basicBlock = basicBlock;
-    this.scope = scope;
-    this.inputId = inputId;
-  }
-
   @Override
   public String toString() {
     return nameNode.toString();
@@ -70,6 +60,13 @@ public final class Reference implements StaticRef, Serializable {
   @VisibleForTesting
   static Reference createRefForTest(CompilerInput input) {
     return new Reference(new Node(Token.NAME), null, null, input.getInputId());
+  }
+
+  private Reference(Node nameNode, BasicBlock basicBlock, Scope scope, InputId inputId) {
+    this.nameNode = nameNode;
+    this.basicBlock = basicBlock;
+    this.scope = scope;
+    this.inputId = inputId;
   }
 
   /** Makes a copy of the current reference using a new Scope instance. */
@@ -217,7 +214,6 @@ public final class Reference implements StaticRef, Serializable {
       case DEC:
       case CATCH:
       case REST:
-      case PARAM_LIST:
         return true;
       case FOR:
       case FOR_IN:

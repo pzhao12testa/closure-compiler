@@ -19,9 +19,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Multimap;
 import com.google.javascript.jscomp.CompilerOptions;
 import com.google.javascript.refactoring.ApplySuggestedFixes;
 import com.google.javascript.refactoring.RefactoringDriver;
@@ -49,29 +47,19 @@ abstract class RefactoringTest {
     return RefactoringDriver.getCompilerOptions();
   }
 
-  protected void assertChanges(String originalCode, String... expectedCodeChoices) {
+  protected void assertChanges(String originalCode, String expectedCode) {
     List<SuggestedFix> fixes = runRefactoring(originalCode);
     assertThat(fixes).isNotEmpty();
-    ImmutableList<String> newCode =
-        ApplySuggestedFixes.applyAllSuggestedFixChoicesToCode(
-                fixes, ImmutableMap.of("input", originalCode))
-            .stream()
-            .map(m -> m.get("input"))
-            .collect(ImmutableList.toImmutableList());
-    assertThat(newCode).containsExactlyElementsIn(ImmutableList.copyOf(expectedCodeChoices));
+    String newCode =
+        ApplySuggestedFixes.applySuggestedFixesToCode(fixes, ImmutableMap.of("input", originalCode))
+            .get("input");
+    assertThat(newCode).isEqualTo(expectedCode);
   }
 
   protected void assertNoChanges(String originalCode) {
     List<SuggestedFix> fixes = runRefactoring(originalCode);
     assertTrue(
         "No changes should be made to the code, but found: " + fixes,
-        fixes.isEmpty()
-            || (fixes.size() == 1
-                && fixes
-                    .get(0)
-                    .getAlternatives()
-                    .stream()
-                    .map(SuggestedFix::getReplacements)
-                    .allMatch(Multimap::isEmpty)));
+        fixes.isEmpty() || (fixes.size() == 1 && fixes.get(0).getReplacements().isEmpty()));
   }
 }

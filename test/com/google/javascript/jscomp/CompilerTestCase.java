@@ -26,7 +26,6 @@ import com.google.common.annotations.GwtIncompatible;
 import com.google.common.base.Joiner;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.errorprone.annotations.ForOverride;
 import com.google.javascript.jscomp.AbstractCompiler.MostRecentTypechecker;
@@ -44,10 +43,8 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import junit.framework.TestCase;
@@ -181,8 +178,6 @@ public abstract class CompilerTestCase extends TestCase {
   private boolean astValidationEnabled;
 
   private final Set<DiagnosticType> ignoredWarnings = new HashSet<>();
-
-  private final Map<String, String> webpackModulesById = new HashMap<>();
 
   /** Whether {@link #setUp} has run. */
   private boolean setUpRan = false;
@@ -622,7 +617,6 @@ public abstract class CompilerTestCase extends TestCase {
     options.setEmitUseStrict(false);
     options.setLanguageOut(languageOut);
     options.setModuleResolutionMode(moduleResolutionMode);
-    options.setPreserveTypeAnnotations(true);
 
     // This doesn't affect whether checkSymbols is run--it just affects
     // whether variable warnings are filtered.
@@ -943,11 +937,6 @@ public abstract class CompilerTestCase extends TestCase {
     expectParseWarningsThisTest = true;
   }
 
-  protected final void setWebpackModulesById(Map<String, String> webpackModulesById) {
-    this.webpackModulesById.clear();
-    this.webpackModulesById.putAll(webpackModulesById);
-  }
-
   /** Returns a newly created TypeCheck. */
   private static TypeCheck createTypeCheck(Compiler compiler) {
     ReverseAbstractInterpreter rai =
@@ -1182,6 +1171,20 @@ public abstract class CompilerTestCase extends TestCase {
     test(externs(externsInputs), srcs(js), expected(expected), diagnostic);
   }
 
+  /**
+   * Verifies that the compiler pass's JS output matches the expected output
+   * and (optionally) that an expected warning is issued. Or, if an error is
+   * expected, this method just verifies that the error is encountered.
+   *
+   * @param externs the externs
+   * @param js Input
+   * @param expected Expected output, or null if an error is expected
+   * @param diagnostic Expected warning or error
+   */
+  protected void test(String externs, String js, String expected, Diagnostic diagnostic) {
+    test(externs(externs), srcs(js), expected(expected), diagnostic);
+  }
+
   protected void testInternal(
       Externs externs,
       Sources inputs,
@@ -1213,6 +1216,16 @@ public abstract class CompilerTestCase extends TestCase {
       return ImmutableList.of(SourceFile.fromCode(name, srcText));
     }
     return null;
+  }
+
+  /**
+   * Verifies that the compiler pass's JS output matches the expected output.
+   *
+   * @param js Inputs
+   * @param expected Expected JS output
+   */
+  protected void test(String externs, String js, String expected) {
+    test(externs(externs), srcs(js), expected(expected));
   }
 
   /**
@@ -2008,9 +2021,6 @@ public abstract class CompilerTestCase extends TestCase {
   protected Compiler createCompiler() {
     Compiler compiler = new Compiler();
     compiler.setFeatureSet(acceptedLanguage.toFeatureSet());
-    if (!webpackModulesById.isEmpty()) {
-      compiler.initWebpackMap(ImmutableMap.copyOf(webpackModulesById));
-    }
     return compiler;
   }
 

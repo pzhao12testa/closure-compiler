@@ -69,7 +69,38 @@ public class Linter {
     lint(Paths.get(filename), new Compiler(System.out));
   }
 
-  static void lint(Path path, Compiler compiler) throws IOException {
+  /**
+   * Keep applying fixes to the given file until no more fixes can be found,
+   * or until fixes have been applied {@code MAX_FIXES} times.
+   */
+  static void fixRepeatedly(String filename) throws IOException {
+    for (int i = 0; i < MAX_FIXES; i++) {
+      if (!fix(filename)) {
+        break;
+      }
+    }
+  }
+
+  /**
+   * @return Whether any fixes were applied.
+   */
+  private static boolean fix(String filename) throws IOException {
+    Compiler compiler = new Compiler(System.out);
+    FixingErrorManager errorManager = new FixingErrorManager();
+    compiler.setErrorManager(errorManager);
+    errorManager.setCompiler(compiler);
+
+    lint(Paths.get(filename), compiler);
+
+    Collection<SuggestedFix> fixes = errorManager.getAllFixes();
+    if (!fixes.isEmpty()) {
+      ApplySuggestedFixes.applySuggestedFixesToFiles(fixes);
+      return true;
+    }
+    return false;
+  }
+
+ static void lint(Path path, Compiler compiler) throws IOException {
     SourceFile file = SourceFile.fromFile(path.toString());
     CompilerOptions options = new CompilerOptions();
     options.setLanguage(LanguageMode.ECMASCRIPT_NEXT);
@@ -101,34 +132,5 @@ public class Linter {
     compiler.disableThreads();
     SourceFile externs = SourceFile.fromCode("<Linter externs>", "");
     compiler.compile(ImmutableList.<SourceFile>of(externs), ImmutableList.of(file), options);
-  }
-
-  /**
-   * Keep applying fixes to the given file until no more fixes can be found, or until fixes have
-   * been applied {@code MAX_FIXES} times.
-   */
-  static void fixRepeatedly(String filename) throws IOException {
-    for (int i = 0; i < MAX_FIXES; i++) {
-      if (!fix(filename)) {
-        break;
-      }
-    }
-  }
-
-  /** @return Whether any fixes were applied. */
-  private static boolean fix(String filename) throws IOException {
-    Compiler compiler = new Compiler(System.out);
-    FixingErrorManager errorManager = new FixingErrorManager();
-    compiler.setErrorManager(errorManager);
-    errorManager.setCompiler(compiler);
-
-    lint(Paths.get(filename), compiler);
-
-    Collection<SuggestedFix> fixes = errorManager.getAllFixes();
-    if (!fixes.isEmpty()) {
-      ApplySuggestedFixes.applySuggestedFixesToFiles(fixes);
-      return true;
-    }
-    return false;
   }
 }

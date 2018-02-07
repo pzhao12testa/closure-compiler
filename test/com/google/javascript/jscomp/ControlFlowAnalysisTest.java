@@ -25,7 +25,6 @@ import com.google.javascript.jscomp.graph.DiGraph.DiGraphEdge;
 import com.google.javascript.jscomp.graph.DiGraph.DiGraphNode;
 import com.google.javascript.rhino.Node;
 import com.google.javascript.rhino.Token;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -45,28 +44,8 @@ public final class ControlFlowAnalysisTest extends TestCase {
    * @param input Input JavaScript.
    * @param expected Expected Graphviz Dot file.
    */
-  private void testCfg(String input, String expected) throws IOException {
+  private void testCfg(String input, String expected) {
     testCfg(input, expected, true);
-  }
-
-  /**
-   * Given an input in JavaScript, test if the control flow analysis creates the proper control flow
-   * graph by comparing the expected Dot file output.
-   *
-   * @param input Input JavaScript.
-   * @param expected Expected Graphviz Dot file.
-   * @param shouldTraverseFunctions Whether to traverse functions when constructing the CFG (true by
-   *     default). Passed in to the constructor of {@link ControlFlowAnalysis}.
-   */
-  private void testCfg(String input, String expected, boolean shouldTraverseFunctions)
-      throws IOException {
-    Compiler compiler = new Compiler();
-    ControlFlowAnalysis cfa = new ControlFlowAnalysis(compiler, shouldTraverseFunctions, true);
-
-    Node root = compiler.parseSyntheticCode("cfgtest", input);
-    cfa.process(null, root);
-    ControlFlowGraph<Node> cfg = cfa.getCfg();
-    assertEquals(expected, DotFormatter.toDot(root, cfg));
   }
 
   /**
@@ -252,7 +231,34 @@ public final class ControlFlowAnalysisTest extends TestCase {
     return createCfg(input, false);
   }
 
-  public void testSimpleStatements() throws IOException {
+  /**
+   * Given an input in JavaScript, test if the control flow analysis
+   * creates the proper control flow graph by comparing the expected
+   * Dot file output.
+   *
+   * @param input Input JavaScript.
+   * @param expected Expected Graphviz Dot file.
+   * @param shouldTraverseFunctions Whether to traverse functions when
+   *    constructing the CFG (true by default). Passed in to the
+   *    constructor of {@link ControlFlowAnalysis}.
+   */
+  private void testCfg(String input, String expected,
+      boolean shouldTraverseFunctions) {
+    Compiler compiler = new Compiler();
+    ControlFlowAnalysis cfa =
+        new ControlFlowAnalysis(compiler, shouldTraverseFunctions, true);
+
+    Node root = compiler.parseSyntheticCode("cfgtest", input);
+    cfa.process(null, root);
+    ControlFlowGraph<Node> cfg = cfa.getCfg();
+    try {
+      assertEquals(expected, DotFormatter.toDot(root, cfg));
+    } catch (java.io.IOException e) {
+      fail("Tests failed with IOExceptions");
+    }
+  }
+
+  public void testSimpleStatements() {
     String src = "var a; a = a; a = a";
     ControlFlowGraph<Node> cfg = createCfg(src);
     assertDownEdge(cfg, Token.SCRIPT, Token.VAR, Branch.UNCOND);
@@ -261,7 +267,7 @@ public final class ControlFlowAnalysisTest extends TestCase {
   }
 
   // Test a simple IF control flow.
-  public void testSimpleIf() throws IOException {
+  public void testSimpleIf() {
     String src = "var x; if (x) { x() } else { x() };";
     ControlFlowGraph<Node> cfg = createCfg(src);
     assertDownEdge(cfg, Token.SCRIPT, Token.VAR, Branch.UNCOND);
@@ -273,14 +279,14 @@ public final class ControlFlowAnalysisTest extends TestCase {
     assertReturnEdge(cfg, Token.EMPTY);
   }
 
-  public void testBreakingBlock() throws IOException {
+  public void testBreakingBlock() {
     // BUG #1382217
     String src = "X: { while(1) { break } }";
     ControlFlowGraph<Node> cfg = createCfg(src);
     assertUpEdge(cfg, Token.BREAK, Token.BLOCK, Branch.UNCOND);
   }
 
-  public void testThrowInCatchBlock() throws IOException {
+  public void testThrowInCatchBlock() {
     String src = "try { throw ''; } catch (e) { throw e;} finally {}";
     String expected = "digraph AST {\n" +
     "  node [color=lightblue2, style=filled];\n" +
@@ -320,7 +326,7 @@ public final class ControlFlowAnalysisTest extends TestCase {
     testCfg(src, expected);
   }
 
-  public void testBreakingTryBlock() throws IOException {
+  public void testBreakingTryBlock() {
     String src = "a: try { break a; } finally {} if(x) {}";
     ControlFlowGraph<Node> cfg = createCfg(src);
     assertCrossEdge(cfg, Token.BREAK, Token.IF, Branch.UNCOND);
@@ -334,7 +340,7 @@ public final class ControlFlowAnalysisTest extends TestCase {
     assertCrossEdge(cfg, Token.BREAK, Token.IF, Branch.UNCOND);
   }
 
-  public void testWithStatement() throws IOException {
+  public void testWithStatement() {
     String src = "var x, y; with(x) { y() }";
     ControlFlowGraph<Node> cfg = createCfg(src);
     assertDownEdge(cfg, Token.WITH, Token.BLOCK, Branch.UNCOND);
@@ -345,7 +351,7 @@ public final class ControlFlowAnalysisTest extends TestCase {
   }
 
   // Test a simple WHILE control flow with BREAKs.
-  public void testSimpleWhile() throws IOException {
+  public void testSimpleWhile() {
     String src = "var x; while (x) { x(); if (x) { break; } x() }";
     ControlFlowGraph<Node> cfg = createCfg(src);
     assertDownEdge(cfg, Token.WHILE, Token.BLOCK, Branch.ON_TRUE);
@@ -354,7 +360,7 @@ public final class ControlFlowAnalysisTest extends TestCase {
     assertReturnEdge(cfg, Token.BREAK);
   }
 
-  public void testSimpleSwitch() throws IOException {
+  public void testSimpleSwitch() {
     String src = "var x; switch(x){ case(1): x(); case('x'): x(); break" +
         "; default: x();}";
     ControlFlowGraph<Node> cfg = createCfg(src);
@@ -371,13 +377,13 @@ public final class ControlFlowAnalysisTest extends TestCase {
     assertNoEdge(cfg, Token.CALL, Token.NAME);
   }
 
-  public void testSimpleNoDefault() throws IOException {
+  public void testSimpleNoDefault() {
     String src = "var x; switch(x){ case(1): break; } x();";
     ControlFlowGraph<Node> cfg = createCfg(src);
     assertCrossEdge(cfg, Token.CASE, Token.EXPR_RESULT, Branch.ON_FALSE);
   }
 
-  public void testSwitchDefaultFirst() throws IOException {
+  public void testSwitchDefaultFirst() {
     // DEFAULT appears first. But it is should evaluated last.
     String src = "var x; switch(x){ default: break; case 1: break; }";
     ControlFlowGraph<Node> cfg = createCfg(src);
@@ -385,7 +391,7 @@ public final class ControlFlowAnalysisTest extends TestCase {
     assertCrossEdge(cfg, Token.CASE, Token.DEFAULT_CASE, Branch.ON_FALSE);
   }
 
-  public void testSwitchDefaultInMiddle() throws IOException {
+  public void testSwitchDefaultInMiddle() {
     // DEFAULT appears in the middle. But it is should evaluated last.
     String src = "var x; switch(x){ case 1: break; default: break; " +
         "case 2: break; }";
@@ -395,7 +401,7 @@ public final class ControlFlowAnalysisTest extends TestCase {
     assertCrossEdge(cfg, Token.CASE, Token.DEFAULT_CASE, Branch.ON_FALSE);
   }
 
-  public void testSwitchEmpty() throws IOException {
+  public void testSwitchEmpty() {
     // DEFAULT appears first. But it is should evaluated last.
     String src = "var x; switch(x){}; x()";
     ControlFlowGraph<Node> cfg = createCfg(src);
@@ -403,7 +409,7 @@ public final class ControlFlowAnalysisTest extends TestCase {
     assertCrossEdge(cfg, Token.EMPTY, Token.EXPR_RESULT, Branch.UNCOND);
   }
 
-  public void testReturnThrowingException() throws IOException {
+  public void testReturnThrowingException() {
     String src = "function f() {try { return a(); } catch (e) {e()}}";
     ControlFlowGraph<Node> cfg = createCfg(src);
     assertCrossEdge(cfg, Token.RETURN, Token.BLOCK, Branch.ON_EX);
@@ -411,7 +417,7 @@ public final class ControlFlowAnalysisTest extends TestCase {
   }
 
   // Test a simple FOR loop.
-  public void testSimpleFor() throws IOException {
+  public void testSimpleFor() {
     String src = "var a; for (var x = 0; x < 100; x++) { a(); }";
     String expected = "digraph AST {\n" +
       "  node [color=lightblue2, style=filled];\n" +
@@ -466,7 +472,7 @@ public final class ControlFlowAnalysisTest extends TestCase {
     testCfg(src, expected);
   }
 
-  public void testSimpleForWithContinue() throws IOException {
+  public void testSimpleForWithContinue() {
     String src = "var a; for (var x = 0; x < 100; x++) {a();continue;a()}";
     String expected = "digraph AST {\n" +
       "  node [color=lightblue2, style=filled];\n" +
@@ -533,7 +539,7 @@ public final class ControlFlowAnalysisTest extends TestCase {
     testCfg(src, expected);
   }
 
-  public void testNestedFor() throws IOException {
+  public void testNestedFor() {
     // This is tricky as the inner FOR branches to "x++" ON_FALSE.
     String src = "var a,b;a();for(var x=0;x<100;x++){for(var y=0;y<100;y++){" +
       "continue;b();}}";
@@ -634,7 +640,7 @@ public final class ControlFlowAnalysisTest extends TestCase {
     testCfg(src, expected);
   }
 
-  public void testNestedDoWithBreak() throws IOException {
+  public void testNestedDoWithBreak() {
     // The BREAK branches to a() with UNCOND.
     String src = "var a;do{do{break}while(a);do{a()}while(a)}while(a);";
     String expected = "digraph AST {\n" +
@@ -700,7 +706,7 @@ public final class ControlFlowAnalysisTest extends TestCase {
     testCfg(src, expected);
   }
 
-  public void testForIn() throws IOException {
+  public void testForIn() {
     String src = "var a,b;for(a in b){a()};";
     String expected =
         "digraph AST {\n"
@@ -740,7 +746,7 @@ public final class ControlFlowAnalysisTest extends TestCase {
     testCfg(src, expected);
   }
 
-  public void testThrow() throws IOException {
+  public void testThrow() {
     String src = "function f() { throw 1; f() }";
     String expected = "digraph AST {\n" +
       "  node [color=lightblue2, style=filled];\n" +
@@ -776,7 +782,7 @@ public final class ControlFlowAnalysisTest extends TestCase {
   }
 
   // Test a simple FUNCTION.
-  public void testSimpleFunction() throws IOException {
+  public void testSimpleFunction() {
     String src = "function f() { f() } f()";
     String expected = "digraph AST {\n" +
       "  node [color=lightblue2, style=filled];\n" +
@@ -815,7 +821,7 @@ public final class ControlFlowAnalysisTest extends TestCase {
     testCfg(src, expected);
   }
 
-  public void testSimpleClass() throws IOException {
+  public void testSimpleClass() {
     String src = "class C{} f();";
     String expected =
         "digraph AST {\n"
@@ -845,7 +851,7 @@ public final class ControlFlowAnalysisTest extends TestCase {
     testCfg(src, expected);
   }
 
-  public void testClassWithMemberFunctions() throws IOException {
+  public void testClassWithMemberFunctions() {
     String src = "class C{ f(){} g(){} }";
     String expected = "digraph AST {\n"
         + "  node [color=lightblue2, style=filled];\n"
@@ -894,7 +900,7 @@ public final class ControlFlowAnalysisTest extends TestCase {
     testCfg(src, expected);
   }
 
-  public void testSimpleCatch() throws IOException {
+  public void testSimpleCatch() {
     String src = "try{ throw x; x(); x['stuff']; x.x; x} catch (e) { e() }";
     String expected = "digraph AST {\n"
         + "  node [color=lightblue2, style=filled];\n"
@@ -981,7 +987,7 @@ public final class ControlFlowAnalysisTest extends TestCase {
     testCfg(src, expected);
   }
 
-  public void testFunctionWithinTry() throws IOException {
+  public void testFunctionWithinTry() {
     // Make sure we don't search for the handler outside of the function.
     String src = "try { var f = function() {throw 1;} } catch (e) { }";
     String expected = "digraph AST {\n"
@@ -1033,7 +1039,7 @@ public final class ControlFlowAnalysisTest extends TestCase {
     testCfg(src, expected);
   }
 
-  public void testNestedCatch() throws IOException {
+  public void testNestedCatch() {
     // Make sure we are going to the right handler.
     String src = "try{try{throw 1;}catch(e){throw 2}}catch(f){}";
     String expected = "digraph AST {\n"
@@ -1101,7 +1107,7 @@ public final class ControlFlowAnalysisTest extends TestCase {
     testCfg(src, expected);
   }
 
-  public void testSimpleFinally() throws IOException {
+  public void testSimpleFinally() {
     String src = "try{var x; foo()}finally{}";
     ControlFlowGraph<Node> cfg = createCfg(src);
     assertDownEdge(cfg, Token.TRY, Token.BLOCK, Branch.UNCOND);
@@ -1112,7 +1118,7 @@ public final class ControlFlowAnalysisTest extends TestCase {
     assertNoEdge(cfg, Token.BLOCK, Token.BLOCK);
   }
 
-  public void testSimpleCatchFinally() throws IOException {
+  public void testSimpleCatchFinally() {
     // Make sure we are going to the right handler.
     String src = "try{ if(a){throw 1}else{a} } catch(e){a}finally{a}";
     String expected = "digraph AST {\n"
@@ -1190,7 +1196,7 @@ public final class ControlFlowAnalysisTest extends TestCase {
     testCfg(src, expected);
   }
 
-  public void testComplicatedFinally2() throws IOException {
+  public void testComplicatedFinally2() {
     // Now the most nasty case.....
     String src = "while(1){try{" +
       "if(a){a;continue;}else if(b){b;break;} else if(c) throw 1; else a}" +
@@ -1203,7 +1209,7 @@ public final class ControlFlowAnalysisTest extends TestCase {
     assertCrossEdge(cfg, Token.THROW, Token.BLOCK, Branch.ON_EX);
   }
 
-  public void testDeepNestedBreakwithFinally() throws IOException {
+  public void testDeepNestedBreakwithFinally() {
     String src = "X:while(1){try{while(2){try{var a;break X;}" +
         "finally{}}}finally{}}";
     ControlFlowGraph<Node> cfg = createCfg(src);
@@ -1218,7 +1224,7 @@ public final class ControlFlowAnalysisTest extends TestCase {
     assertReturnEdge(cfg, Token.BLOCK);
   }
 
-  public void testDeepNestedFinally() throws IOException {
+  public void testDeepNestedFinally() {
     String src = "try{try{try{throw 1}" +
         "finally{1;var a}}finally{2;if(a);}}finally{3;a()}";
     ControlFlowGraph<Node> cfg = createCfg(src);
@@ -1227,19 +1233,19 @@ public final class ControlFlowAnalysisTest extends TestCase {
     assertCrossEdge(cfg, Token.IF, Token.BLOCK, Branch.ON_EX);
   }
 
-  public void testReturn() throws IOException {
+  public void testReturn() {
     String src = "function f() { return; }";
     ControlFlowGraph<Node> cfg = createCfg(src);
     assertReturnEdge(cfg, Token.RETURN);
   }
 
-  public void testReturnInFinally() throws IOException {
+  public void testReturnInFinally() {
     String src = "function f(x){ try{} finally {return x;} }";
     ControlFlowGraph<Node> cfg = createCfg(src);
     assertReturnEdge(cfg, Token.RETURN);
   }
 
-  public void testReturnInFinally2() throws IOException {
+  public void testReturnInFinally2() {
     String src = "function f(x){" +
       " try{ try{}finally{var dummy; return x;} } finally {} }";
     ControlFlowGraph<Node> cfg = createCfg(src);
@@ -1249,7 +1255,7 @@ public final class ControlFlowAnalysisTest extends TestCase {
     assertNoReturnEdge(cfg, Token.RETURN);
   }
 
-  public void testReturnInTry() throws IOException {
+  public void testReturnInTry() {
     String src = "function f(x){ try{x; return x()} finally {} var y;}";
     ControlFlowGraph<Node> cfg = createCfg(src);
     assertCrossEdge(cfg, Token.EXPR_RESULT, Token.RETURN, Branch.UNCOND);
@@ -1260,7 +1266,7 @@ public final class ControlFlowAnalysisTest extends TestCase {
     assertNoReturnEdge(cfg, Token.RETURN);
   }
 
-  public void testOptionNotToTraverseFunctions() throws IOException {
+  public void testOptionNotToTraverseFunctions() {
     String src = "var x = 1; function f() { x = null; }";
     String expectedWhenNotTraversingFunctions = "digraph AST {\n" +
       "  node [color=lightblue2, style=filled];\n" +
@@ -1332,19 +1338,19 @@ public final class ControlFlowAnalysisTest extends TestCase {
     testCfg(src, expectedWhenNotTraversingFunctions, false);
   }
 
-  public void testInstanceOf() throws IOException {
+  public void testInstanceOf() {
     String src = "try { x instanceof 'x' } catch (e) { }";
     ControlFlowGraph<Node> cfg = createCfg(src, true);
     assertCrossEdge(cfg, Token.EXPR_RESULT, Token.BLOCK, Branch.ON_EX);
   }
 
-  public void testSynBlock() throws IOException {
+  public void testSynBlock() {
     String src = "START(); var x; END(); var y;";
     ControlFlowGraph<Node> cfg = createCfg(src, true);
     assertCrossEdge(cfg, Token.BLOCK, Token.EXPR_RESULT, Branch.SYN_BLOCK);
   }
 
-  public void testPartialTraversalOfScope() throws IOException {
+  public void testPartialTraversalOfScope() {
     Compiler compiler = new Compiler();
     ControlFlowAnalysis cfa = new ControlFlowAnalysis(compiler, true, true);
 
@@ -1360,7 +1366,7 @@ public final class ControlFlowAnalysisTest extends TestCase {
     assertNull(cfg.getNode(script2));
   }
 
-  public void testForLoopOrder() throws IOException {
+  public void testForLoopOrder() {
     assertNodeOrder(
         createCfg("for (var i = 0; i < 5; i++) { var x = 3; } if (true) {}"),
         ImmutableList.of(
@@ -1369,7 +1375,7 @@ public final class ControlFlowAnalysisTest extends TestCase {
             Token.IF, Token.BLOCK));
   }
 
-  public void testLabelledForInLoopOrder() throws IOException {
+  public void testLabelledForInLoopOrder() {
     assertNodeOrder(
         createCfg(
             "var i = 0; var y = {}; "
@@ -1390,7 +1396,7 @@ public final class ControlFlowAnalysisTest extends TestCase {
             Token.EXPR_RESULT));
   }
 
-  public void testLocalFunctionOrder() throws IOException {
+  public void testLocalFunctionOrder() {
     ControlFlowGraph<Node> cfg =
         createCfg("function f() { while (x) { x++; } } var x = 3;");
     assertNodeOrder(
@@ -1402,14 +1408,14 @@ public final class ControlFlowAnalysisTest extends TestCase {
             Token.WHILE, Token.BLOCK, Token.EXPR_RESULT));
   }
 
-  public void testDoWhileOrder() throws IOException {
+  public void testDoWhileOrder() {
     assertNodeOrder(
         createCfg("do { var x = 3; } while (true); void x;"),
         ImmutableList.of(
             Token.SCRIPT, Token.BLOCK, Token.VAR, Token.DO, Token.EXPR_RESULT));
   }
 
-  public void testBreakInFinally1() throws IOException {
+  public void testBreakInFinally1() {
     String src =
         "f = function() {\n" +
         "  var action;\n" +
@@ -1504,7 +1510,7 @@ public final class ControlFlowAnalysisTest extends TestCase {
     testCfg(src, expected);
   }
 
-  public void testBreakInFinally2() throws IOException {
+  public void testBreakInFinally2() {
     String src =
       "var action;\n" +
       "a: {\n" +

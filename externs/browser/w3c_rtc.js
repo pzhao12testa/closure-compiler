@@ -1938,16 +1938,6 @@ RTCPeerConnection.prototype.removeStream = function(stream) {};
  */
 RTCPeerConnection.prototype.addTrack = function(track, stream, var_args) {};
 
-/**
- * @return {!RTCConfiguration}
- */
-RTCPeerConnection.prototype.getConfiguration = function() {};
-
-/**
- * @param {!RTCConfiguration} configuration
- * @return {undefined}
- */
-RTCPeerConnection.prototype.setConfiguration = function(configuration) {};
 
 /**
  * @param {!RTCRtpSender} sender

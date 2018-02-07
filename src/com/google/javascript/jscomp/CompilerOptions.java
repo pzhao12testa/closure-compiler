@@ -33,7 +33,6 @@ import com.google.common.primitives.Chars;
 import com.google.javascript.jscomp.deps.ModuleLoader;
 import com.google.javascript.jscomp.parsing.Config;
 import com.google.javascript.jscomp.parsing.parser.FeatureSet;
-import com.google.javascript.jscomp.resources.ResourceLoader;
 import com.google.javascript.rhino.IR;
 import com.google.javascript.rhino.Node;
 import com.google.javascript.rhino.SourcePosition;
@@ -198,14 +197,16 @@ public class CompilerOptions implements Serializable {
     }
   }
 
-  // TODO(tbreisacher): When this is false, report an error if there's a goog.provide
-  // in an externs file.
   public boolean inIncrementalCheckMode() {
     return incrementalCheckMode != IncrementalCheckMode.OFF;
   }
 
   public boolean shouldGenerateTypedExterns() {
     return incrementalCheckMode == IncrementalCheckMode.GENERATE_IJS;
+  }
+
+  public boolean allowIjsInputs() {
+    return incrementalCheckMode != IncrementalCheckMode.OFF;
   }
 
   private Config.JsDocParsing parseJsDocDocumentation = Config.JsDocParsing.TYPES_ONLY;
@@ -277,6 +278,12 @@ public class CompilerOptions implements Serializable {
   //--------------------------------
 
   DependencyOptions dependencyOptions = new DependencyOptions();
+
+  // TODO(tbreisacher): When this is false, report an error if there's a goog.provide
+  // in an externs file.
+  boolean allowGoogProvideInExterns() {
+    return allowIjsInputs();
+  }
 
   /** Returns localized replacement for MSG_* variables */
   public MessageBundle messageBundle = null;
@@ -565,6 +572,9 @@ public class CompilerOptions implements Serializable {
    * Provide formal names for elements of arguments array.
    */
   public boolean optimizeArgumentsArray;
+
+  /** Chains calls to functions that return this. */
+  boolean chainCalls;
 
   /** Use type information to enable additional optimization opportunities. */
   boolean useTypesForLocalOptimization;
@@ -1171,13 +1181,8 @@ public class CompilerOptions implements Serializable {
 
   String instrumentationTemplateFile;
 
-  /**
-   * List of conformance configs to use in CheckConformance.
-   *
-   * <p>The first entry of this list is always the Global ConformanceConfig
-   */
-  private ImmutableList<ConformanceConfig> conformanceConfigs =
-      ImmutableList.of(ResourceLoader.loadGlobalConformance(CompilerOptions.class));
+  /** List of conformance configs to use in CheckConformance */
+  private ImmutableList<ConformanceConfig> conformanceConfigs = ImmutableList.of();
 
   /**
    * For use in {@link CompilationLevel#WHITESPACE_ONLY} mode, when using goog.module.
@@ -1244,6 +1249,7 @@ public class CompilerOptions implements Serializable {
     checkMissingGetCssNameLevel = CheckLevel.OFF;
     checkMissingGetCssNameBlacklist = null;
     computeFunctionSideEffects = false;
+    chainCalls = false;
     extraAnnotationNames = null;
 
     // Optimizations
@@ -1599,6 +1605,13 @@ public class CompilerOptions implements Serializable {
   }
 
   /**
+   * Sets the hash function to use for Xid
+   */
+  public void setXidHashFunction(Xid.HashFunction xidHashFunction) {
+    this.xidHashFunction = xidHashFunction;
+  }
+
+  /**
    * Sets the id generators to replace.
    */
   public void setIdGenerators(Map<String, RenamingMap> idGenerators) {
@@ -1612,13 +1625,6 @@ public class CompilerOptions implements Serializable {
    */
   public void setIdGeneratorsMap(String previousMappings) {
     this.idGeneratorsMapSerialized = previousMappings;
-  }
-
-  /**
-   * Sets the hash function to use for Xid
-   */
-  public void setXidHashFunction(Xid.HashFunction xidHashFunction) {
-    this.xidHashFunction = xidHashFunction;
   }
 
   private Reach inlineFunctionsLevel;
@@ -1646,10 +1652,6 @@ public class CompilerOptions implements Serializable {
   public void setMaxFunctionSizeAfterInlining(int funAstSize) {
     checkArgument(funAstSize > 0);
     this.maxFunctionSizeAfterInlining = funAstSize;
-  }
-
-  public void setInlineVariables(boolean inlineVariables) {
-    this.inlineVariables = inlineVariables;
   }
 
   /**
@@ -1745,6 +1747,12 @@ public class CompilerOptions implements Serializable {
     return colorizeErrorOutput;
   }
 
+  /**
+   * If true, chain calls to functions that return this.
+   */
+  public void setChainCalls(boolean value) {
+    this.chainCalls = value;
+  }
 
   /**
    * Enable run-time type checking, which adds JS type assertions for debugging.
@@ -2236,6 +2244,10 @@ public class CompilerOptions implements Serializable {
     this.crossModuleMethodMotion = crossModuleMethodMotion;
   }
 
+  public void setInlineVariables(boolean inlineVariables) {
+    this.inlineVariables = inlineVariables;
+  }
+
   public void setInlineLocalVariables(boolean inlineLocalVariables) {
     this.inlineLocalVariables = inlineLocalVariables;
   }
@@ -2245,14 +2257,7 @@ public class CompilerOptions implements Serializable {
   }
 
   public void setSmartNameRemoval(boolean smartNameRemoval) {
-    // TODO(bradfordcsmith): Remove the smart name removal option.
     this.smartNameRemoval = smartNameRemoval;
-    if (smartNameRemoval) {
-      // To get the effect this option used to have we need to enable these options.
-      // Don't disable them here if they were set explicitly, though.
-      this.removeUnusedVars = true;
-      this.removeUnusedPrototypeProperties = true;
-    }
   }
 
   public void setExtraSmartNameRemoval(boolean smartNameRemoval) {
@@ -2506,11 +2511,6 @@ public class CompilerOptions implements Serializable {
   }
 
   public boolean shouldPreserveGoogModule() {
-    return this.preserveClosurePrimitives;
-  }
-
-  /** Do not process goog. intrinsics, such as goog.getCssName(). */
-  public boolean shouldPreserveGoogLibraryPrimitives() {
     return this.preserveClosurePrimitives;
   }
 
@@ -2780,14 +2780,16 @@ public class CompilerOptions implements Serializable {
     }
   }
 
-  public final ImmutableList<ConformanceConfig> getConformanceConfigs() {
+  public List<ConformanceConfig> getConformanceConfigs() {
     return conformanceConfigs;
   }
 
-  /** Both enable and configure conformance checks, if non-null. */
+  /**
+   * Both enable and configure conformance checks, if non-null.
+   */
   @GwtIncompatible("Conformance")
   public void setConformanceConfig(ConformanceConfig conformanceConfig) {
-    setConformanceConfigs(ImmutableList.of(conformanceConfig));
+    this.conformanceConfigs = ImmutableList.of(conformanceConfig);
   }
 
   /**
@@ -2795,11 +2797,7 @@ public class CompilerOptions implements Serializable {
    */
   @GwtIncompatible("Conformance")
   public void setConformanceConfigs(List<ConformanceConfig> configs) {
-    this.conformanceConfigs =
-        ImmutableList.<ConformanceConfig>builder()
-            .add(ResourceLoader.loadGlobalConformance(CompilerOptions.class))
-            .addAll(configs)
-            .build();
+    this.conformanceConfigs = ImmutableList.copyOf(configs);
   }
 
   public boolean shouldEmitUseStrict() {
@@ -2858,6 +2856,7 @@ public class CompilerOptions implements Serializable {
             .add("assumeClosuresOnlyCaptureReferences", assumeClosuresOnlyCaptureReferences)
             .add("assumeStrictThis", assumeStrictThis())
             .add("brokenClosureRequiresLevel", brokenClosureRequiresLevel)
+            .add("chainCalls", chainCalls)
             .add("checkDeterminism", getCheckDeterminism())
             .add("checkGlobalNamesLevel", checkGlobalNamesLevel)
             .add("checkGlobalThisLevel", checkGlobalThisLevel)
@@ -2917,7 +2916,6 @@ public class CompilerOptions implements Serializable {
             .add("generateTypedExterns", shouldGenerateTypedExterns())
             .add("idGenerators", idGenerators)
             .add("idGeneratorsMapSerialized", idGeneratorsMapSerialized)
-            .add("incrementalCheckMode", incrementalCheckMode)
             .add("inferConsts", inferConsts)
             .add("inferTypes", inferTypes)
             .add("inlineConstantVars", inlineConstantVars)

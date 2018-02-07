@@ -22,6 +22,7 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.javascript.rhino.Node;
 import com.google.javascript.rhino.StaticSymbolTable;
+import com.google.javascript.rhino.TypeI;
 import com.google.javascript.rhino.jstype.JSType;
 import com.google.javascript.rhino.jstype.SimpleReference;
 import com.google.javascript.rhino.jstype.SimpleSlot;
@@ -62,6 +63,11 @@ final class PreprocessorSymbolTable
 
   @Override
   public JSType getTypeOfThis() {
+    return null;
+  }
+
+  @Override
+  public TypeI getTypeIOfThis() {
     return null;
   }
 

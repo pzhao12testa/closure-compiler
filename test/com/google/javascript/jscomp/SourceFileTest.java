@@ -18,7 +18,6 @@ package com.google.javascript.jscomp;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.google.common.io.MoreFiles;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -60,14 +59,14 @@ public final class SourceFileTest extends TestCase {
     String expectedContent = "// content content content";
     String newExpectedContent = "// new content new content new content";
     Path jsFile = Files.createTempFile("test", ".js");
-    MoreFiles.asCharSink(jsFile, StandardCharsets.UTF_8).write(expectedContent);
+    Files.write(jsFile, expectedContent.getBytes(StandardCharsets.UTF_8));
     SourceFile sourceFile = SourceFile.fromFile(jsFile.toFile());
 
     // Verify initial state.
     assertEquals(expectedContent, sourceFile.getCode());
 
     // Perform a change.
-    MoreFiles.asCharSink(jsFile, StandardCharsets.UTF_8).write(newExpectedContent);
+    Files.write(jsFile, newExpectedContent.getBytes(StandardCharsets.UTF_8));
     sourceFile.clearCachedSource();
 
     // Verify final state.

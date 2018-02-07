@@ -1369,13 +1369,6 @@ final class TypedScopeCreator implements ScopeCreator {
         if (rValue != null) {
           JSType rValueType = getDeclaredRValueType(lValue, rValue);
           if (rValueType != null) {
-            // Treat @const-annotated aliases like @constructor/@interface if RHS has instance type
-            if (lValue.isQualifiedName()
-                && rValueType.isFunctionType()
-                && rValueType.toMaybeFunctionType().hasInstanceType()) {
-              FunctionType functionType = rValueType.toMaybeFunctionType();
-              typeRegistry.declareType(lValue.getQualifiedName(), functionType.getInstanceType());
-            }
             return rValueType;
           }
         }
@@ -2010,18 +2003,14 @@ final class TypedScopeCreator implements ScopeCreator {
 
     private ObjectType getThisTypeForCollectingProperties() {
       Node rootNode = scope.getRootNode();
-      if (rootNode.isFromExterns()) {
-        return null;
-      }
+      if (rootNode.isFromExterns()) return null;
 
       JSType type = rootNode.getJSType();
-      if (type == null || !type.isFunctionType()) {
-        return null;
-      }
+      if (type == null || !type.isFunctionType()) return null;
 
       FunctionType fnType = type.toMaybeFunctionType();
       JSType fnThisType = fnType.getTypeOfThis();
-      return fnThisType == null ? null : fnThisType.toObjectType();
+      return fnThisType.isUnknownType() ? null : fnThisType.toObjectType();
     }
 
     private void maybeCollectMember(Node member,

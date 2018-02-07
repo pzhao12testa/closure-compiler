@@ -314,20 +314,6 @@ public final class JSTypes implements Serializable {
     return getArrayInstance(this.UNKNOWN);
   }
 
-  public JSType getArrayInstance(JSType t) {
-    if (arrayType == null) {
-      return this.UNKNOWN;
-    }
-    ImmutableList<String> typeParams = arrayType.getTypeParameters();
-    // typeParams can be != 1 in old externs files :-S
-    if (typeParams.size() == 1) {
-      return JSType.fromObjectType(
-          ObjectType.fromNominalType(
-              this.arrayType.getAsNominalType().instantiateGenerics(ImmutableList.of(t))));
-    }
-    return arrayType.getInstanceAsJSType();
-  }
-
   public JSType getIArrayLikeInstance(JSType t) {
     return this.iArrayLike == null
         ? this.UNKNOWN
@@ -398,6 +384,19 @@ public final class JSTypes implements Serializable {
     return this.iObject;
   }
 
+  public JSType getArrayInstance(JSType t) {
+    if (arrayType == null) {
+      return this.UNKNOWN;
+    }
+    ImmutableList<String> typeParams = arrayType.getTypeParameters();
+    // typeParams can be != 1 in old externs files :-S
+    if (typeParams.size() == 1) {
+      return JSType.fromObjectType(ObjectType.fromNominalType(
+          this.arrayType.getAsNominalType().instantiateGenerics(ImmutableList.of(t))));
+    }
+    return arrayType.getInstanceAsJSType();
+  }
+
   public JSType getArgumentsArrayType(JSType t) {
     if (this.arguments == null) {
       return this.UNKNOWN;
@@ -410,10 +409,6 @@ public final class JSTypes implements Serializable {
       result = result.substituteGenerics(ImmutableMap.of(typeParam, t));
     }
     return result;
-  }
-
-  public JSType getArgumentsArrayType() {
-    return getArgumentsArrayType(this.UNKNOWN);
   }
 
   public JSType getRegexpType() {
@@ -446,6 +441,10 @@ public final class JSTypes implements Serializable {
 
   ObjectType getStringInstanceObjType() {
     return stringInstanceObjtype != null ? stringInstanceObjtype : this.topObjectType;
+  }
+
+  public JSType getArgumentsArrayType() {
+    return getArgumentsArrayType(this.UNKNOWN);
   }
 
   public JSType getITemplateArrayType() {

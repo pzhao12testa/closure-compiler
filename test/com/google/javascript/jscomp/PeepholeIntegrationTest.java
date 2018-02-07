@@ -145,7 +145,6 @@ public class PeepholeIntegrationTest extends CompilerTestCase {
   }
 
   public void testRemoveDuplicateStatementsIntegration() {
-    enableNormalize();
     test(
         lines(
             "function z() {if (a) { return true }",

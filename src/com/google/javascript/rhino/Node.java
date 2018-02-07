@@ -791,9 +791,9 @@ public class Node implements Serializable {
   }
 
   /**
-   * Add 'newChild' after 'node'.  If 'node' is null, add it to the front of this node.
+   * Add 'child' after 'node'.
    */
-  public final void addChildAfter(Node newChild, @Nullable Node node) {
+  public final void addChildAfter(Node newChild, Node node) {
     checkArgument(newChild.next == null, "The new child node has next siblings.");
     checkArgument(newChild.previous == null, "The new child node has previous siblings.");
     // NOTE: newChild.next remains null
@@ -801,9 +801,7 @@ public class Node implements Serializable {
     addChildrenAfter(newChild, node);
   }
 
-  /**
-   * Add all children after 'node'. If 'node' is null, add them to the front of this node.
-   */
+  /** Add all children after 'node'. */
   public final void addChildrenAfter(@Nullable Node children, @Nullable Node node) {
     if (children == null) {
       return; // removeChildren() returns null when there are none
@@ -943,15 +941,15 @@ public class Node implements Serializable {
     return this;
   }
 
-  public final boolean hasProps() {
-    return propListHead != null;
-  }
-
   public final void removeProp(byte propType) {
     PropListItem result = removeProp(propListHead, propType);
     if (result != propListHead) {
       propListHead = result;
     }
+  }
+
+  public final boolean hasProps() {
+    return propListHead != null;
   }
 
   /**
@@ -1810,6 +1808,11 @@ public class Node implements Serializable {
     return null;
   }
 
+  /** Returns true if this node is equivalent semantically to another */
+  public final boolean isEquivalentTo(Node node) {
+    return isEquivalentTo(node, false, true, false, false);
+  }
+
   /** Checks equivalence without going into child nodes */
   public final boolean isEquivalentToShallow(Node node) {
     return isEquivalentTo(node, false, false, false, false);
@@ -1830,11 +1833,6 @@ public class Node implements Serializable {
    */
   public final boolean isEquivalentToTyped(Node node) {
     return isEquivalentTo(node, true, true, true, false);
-  }
-
-  /** Returns true if this node is equivalent semantically to another */
-  public final boolean isEquivalentTo(Node node) {
-    return isEquivalentTo(node, false, true, false, false);
   }
 
   /**

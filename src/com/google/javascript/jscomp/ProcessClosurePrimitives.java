@@ -24,10 +24,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.javascript.jscomp.NodeTraversal.AbstractPostOrderCallback;
-import com.google.javascript.jscomp.parsing.JsDocInfoParser;
 import com.google.javascript.rhino.IR;
 import com.google.javascript.rhino.JSDocInfo;
-import com.google.javascript.rhino.JSDocInfoBuilder;
 import com.google.javascript.rhino.JSTypeExpression;
 import com.google.javascript.rhino.Node;
 import com.google.javascript.rhino.Token;
@@ -1304,9 +1302,6 @@ class ProcessClosurePrimitives extends AbstractPostOrderCallback
     private Node explicitNode = null;
     private JSModule explicitModule = null;
 
-    // There are child namespaces of this one.
-    private boolean hasAChildNamespace = false;
-
     // The candidate definition.
     private Node candidateDefinition = null;
 
@@ -1331,14 +1326,10 @@ class ProcessClosurePrimitives extends AbstractPostOrderCallback
      */
     void addProvide(Node node, JSModule module, boolean explicit) {
       if (explicit) {
-        // goog.provide('name.space');
         checkState(explicitNode == null);
         checkArgument(node.isExprResult());
         explicitNode = node;
         explicitModule = module;
-      } else {
-        // goog.provide('name.space.some.child');
-        hasAChildNamespace = true;
       }
       updateMinimumModule(module);
     }
@@ -1425,48 +1416,56 @@ class ProcessClosurePrimitives extends AbstractPostOrderCallback
 
         // Does this need a VAR keyword?
         replacementNode = candidateDefinition;
-        if (candidateDefinition.isExprResult()) {
-          Node exprNode = candidateDefinition.getOnlyChild();
-          if (exprNode.isAssign()) {
-            // namespace = value;
-            candidateDefinition.putBooleanProp(Node.IS_NAMESPACE, true);
-            Node nameNode = exprNode.getFirstChild();
-            if (nameNode.isName()) {
-              // Need to convert this assign to a var declaration.
-              Node valueNode = nameNode.getNext();
-              exprNode.removeChild(nameNode);
-              exprNode.removeChild(valueNode);
-              nameNode.addChildToFront(valueNode);
-              Node varNode = IR.var(nameNode);
-              varNode.useSourceInfoFrom(candidateDefinition);
-              candidateDefinition.replaceWith(varNode);
-              varNode.setJSDocInfo(exprNode.getJSDocInfo());
-              compiler.reportChangeToEnclosingScope(varNode);
-              replacementNode = varNode;
-            }
-          } else {
-            // /** @typedef {something} */ name.space.Type;
-            checkState(exprNode.isQualifiedName(), exprNode);
-            // If this namespace has child namespaces, we still need to add an object to hang them
-            // on to avoid creating broken code.
-            // We must cast the type of the literal to unknown, because the type checker doesn't
-            // expect the namespace to have a value.
-            if (hasAChildNamespace) {
-              replaceWith(createDeclarationNode(
-                  IR.cast(IR.objectlit(), createUnknownTypeJsDocInfo())));
-            }
+        if (candidateDefinition.isExprResult()
+            && !candidateDefinition.getFirstChild().isQualifiedName()) {
+          candidateDefinition.putBooleanProp(Node.IS_NAMESPACE, true);
+          Node assignNode = candidateDefinition.getFirstChild();
+          Node nameNode = assignNode.getFirstChild();
+          if (nameNode.isName()) {
+            // Need to convert this assign to a var declaration.
+            Node valueNode = nameNode.getNext();
+            assignNode.removeChild(nameNode);
+            assignNode.removeChild(valueNode);
+            nameNode.addChildToFront(valueNode);
+            Node varNode = IR.var(nameNode);
+            varNode.useSourceInfoFrom(candidateDefinition);
+            candidateDefinition.replaceWith(varNode);
+            varNode.setJSDocInfo(assignNode.getJSDocInfo());
+            compiler.reportChangeToEnclosingScope(varNode);
+            replacementNode = varNode;
           }
         }
       } else {
         // Handle the case where there's not a duplicate definition.
-        replaceWith(createDeclarationNode(IR.objectlit()));
+        replacementNode = createDeclarationNode();
+        if (firstModule == minimumModule) {
+          firstNode.getParent().addChildBefore(replacementNode, firstNode);
+        } else {
+          // In this case, the name was implicitly provided by two independent
+          // modules. We need to move this code up to a common module.
+          int indexOfDot = namespace.lastIndexOf('.');
+          if (indexOfDot == -1) {
+            // Any old place is fine.
+            compiler.getNodeForCodeInsertion(minimumModule)
+                .addChildToBack(replacementNode);
+          } else {
+            // Add it after the parent namespace.
+            ProvidedName parentName =
+                providedNames.get(namespace.substring(0, indexOfDot));
+            checkNotNull(parentName);
+            checkNotNull(parentName.replacementNode);
+            parentName.replacementNode.getParent().addChildAfter(
+                replacementNode, parentName.replacementNode);
+          }
+        }
+        compiler.reportChangeToEnclosingScope(replacementNode);
       }
       if (explicitNode != null) {
         if (preserveGoogProvidesAndRequires && explicitNode.hasChildren()) {
           return;
         }
-        /*
-         * If 'explicitNode' was added earlier in this pass then don't bother to report its removal
+        /**
+         * If 'explicitNode' was added earlier in this pass then don't bother to report it's removal
          * right here as a change (since the original AST state is being restored). Also remove
          * 'explicitNode' from the list of "possibly live" nodes so that it does not get reported as
          * a change at the end of the pass.
@@ -1478,40 +1477,15 @@ class ProcessClosurePrimitives extends AbstractPostOrderCallback
       }
     }
 
-    private void replaceWith(Node replacement) {
-      replacementNode = replacement;
-      if (firstModule == minimumModule) {
-        firstNode.getParent().addChildBefore(replacementNode, firstNode);
-      } else {
-        // In this case, the name was implicitly provided by two independent
-        // modules. We need to move this code up to a common module.
-        int indexOfDot = namespace.lastIndexOf('.');
-        if (indexOfDot == -1) {
-          // Any old place is fine.
-          compiler.getNodeForCodeInsertion(minimumModule)
-              .addChildToBack(replacementNode);
-        } else {
-          // Add it after the parent namespace.
-          ProvidedName parentName =
-              providedNames.get(namespace.substring(0, indexOfDot));
-          checkNotNull(parentName);
-          checkNotNull(parentName.replacementNode);
-          parentName.replacementNode.getParent().addChildAfter(
-              replacementNode, parentName.replacementNode);
-        }
-      }
-      compiler.reportChangeToEnclosingScope(replacementNode);
-    }
-
     /**
      * Create the declaration node for this name, without inserting it
      * into the AST.
      */
-    private Node createDeclarationNode(Node value) {
+    private Node createDeclarationNode() {
       if (namespace.indexOf('.') == -1) {
-        return makeVarDeclNode(value);
+        return makeVarDeclNode();
       } else {
-        return makeAssignmentExprNode(value);
+        return makeAssignmentExprNode();
       }
     }
 
@@ -1519,9 +1493,9 @@ class ProcessClosurePrimitives extends AbstractPostOrderCallback
      * Creates a simple namespace variable declaration
      * (e.g. <code>var foo = {};</code>).
      */
-    private Node makeVarDeclNode(Node value) {
+    private Node makeVarDeclNode() {
       Node name = IR.name(namespace);
-      name.addChildToFront(value);
+      name.addChildToFront(createNamespaceLiteral());
 
       Node decl = IR.var(name);
       decl.putBooleanProp(Node.IS_NAMESPACE, true);
@@ -1538,18 +1512,22 @@ class ProcessClosurePrimitives extends AbstractPostOrderCallback
       return decl;
     }
 
+    private Node createNamespaceLiteral() {
+      return IR.objectlit();
+    }
+
     /**
      * Creates a dotted namespace assignment expression
      * (e.g. <code>foo.bar = {};</code>).
      */
-    private Node makeAssignmentExprNode(Node value) {
+    private Node makeAssignmentExprNode() {
       Node decl = IR.exprResult(
           IR.assign(
               NodeUtil.newQName(
                   compiler, namespace,
                   firstNode /* real source info will be filled in below */,
                   namespace),
-              value));
+              createNamespaceLiteral()));
       decl.putBooleanProp(Node.IS_NAMESPACE, true);
       if (candidateDefinition == null) {
         decl.getFirstChild().setJSDocInfo(NodeUtil.createConstantJsDoc());
@@ -1593,13 +1571,6 @@ class ProcessClosurePrimitives extends AbstractPostOrderCallback
     }
   }
 
-  private JSDocInfo createUnknownTypeJsDocInfo() {
-    JSDocInfoBuilder castToUnknownBuilder = new JSDocInfoBuilder(true);
-    castToUnknownBuilder.recordType(
-        new JSTypeExpression(JsDocInfoParser.parseTypeString("?"), ""));
-    return castToUnknownBuilder.build();
-  }
-
   /**
    * @return Whether the node is namespace placeholder.
    */
@@ -1617,14 +1588,9 @@ class ProcessClosurePrimitives extends AbstractPostOrderCallback
       value = name.getFirstChild();
     }
 
-    if (value == null) {
-      return false;
-    }
-    if (value.isCast()) {
-      // There may be a cast to unknown type wrapped around the value.
-      value = value.getOnlyChild();
-    }
-    return value.isObjectLit() && !value.hasChildren();
+    return value != null
+      && value.isObjectLit()
+      && !value.hasChildren();
   }
 
   /**

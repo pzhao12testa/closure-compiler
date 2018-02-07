@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.google.javascript.jscomp;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -170,8 +171,6 @@ public class Compiler extends AbstractCompiler implements ErrorHandler, SourceFi
   private final Map<InputId, CompilerInput> inputsById = new ConcurrentHashMap<>();
 
   private transient IncrementalScopeCreator scopeCreator = null;
-
-  private ImmutableMap<String, String> inputPathByWebpackId;
 
   /**
    * Subclasses are responsible for loading sources that were not provided as explicit inputs to the
@@ -389,10 +388,6 @@ public class Compiler extends AbstractCompiler implements ErrorHandler, SourceFi
   }
 
   public void printConfig(PrintStream printStream) {
-    printStream.println("==== Externs ====");
-    printStream.println(externs);
-    printStream.println("==== Inputs ====");
-    printStream.println(inputs);
     printStream.println("==== CompilerOptions ====");
     printStream.println(options);
     printStream.println("==== WarningsGuard ====");
@@ -634,6 +629,7 @@ public class Compiler extends AbstractCompiler implements ErrorHandler, SourceFi
   private static List<CompilerInput> getAllInputsFromModules(
       List<JSModule> modules) {
     List<CompilerInput> inputs = new ArrayList<>();
+    Map<String, JSModule> inputMap = new HashMap<>();
     for (JSModule module : modules) {
       for (CompilerInput input : module.getInputs()) {
         String inputName = input.getName();
@@ -642,6 +638,7 @@ public class Compiler extends AbstractCompiler implements ErrorHandler, SourceFi
         // it will show up twice in the inputs list, and then we
         // will get an error down the line.
         inputs.add(input);
+        inputMap.put(inputName, module);
       }
     }
     return inputs;
@@ -992,12 +989,6 @@ public class Compiler extends AbstractCompiler implements ErrorHandler, SourceFi
    */
   public void parse() {
     parseInputs();
-  }
-
-  public Node parse(SourceFile file) {
-    initCompilerOptionsIfTesting();
-    logger.finest("Parsing: " + file.getName());
-    return new JsAst(file).getAstRoot(this);
   }
 
   PassConfig getPassConfig() {
@@ -1764,7 +1755,7 @@ public class Compiler extends AbstractCompiler implements ErrorHandler, SourceFi
                 inputs,
                 ModuleLoader.PathResolver.RELATIVE,
                 options.moduleResolutionMode,
-                inputPathByWebpackId);
+                null);
 
         if (options.moduleResolutionMode == ModuleLoader.ResolutionMode.NODE) {
           // processJsonInputs requires a module loader to already be defined
@@ -2004,8 +1995,7 @@ public class Compiler extends AbstractCompiler implements ErrorHandler, SourceFi
     }
 
     FindModuleDependencies findDeps =
-        new FindModuleDependencies(
-            this, supportEs6Modules, supportCommonJSModules, inputPathByWebpackId);
+        new FindModuleDependencies(this, supportEs6Modules, supportCommonJSModules);
     findDeps.process(input.getAstRoot(this));
 
     // If this input was imported by another module, it is itself a module
@@ -2015,10 +2005,7 @@ public class Compiler extends AbstractCompiler implements ErrorHandler, SourceFi
     }
     this.moduleTypesByName.put(input.getPath().toModuleName(), input.getJsModuleType());
 
-    ArrayList<String> allDeps = new ArrayList<>();
-    allDeps.addAll(input.getRequires());
-    allDeps.addAll(input.getDynamicRequires());
-    for (String requiredNamespace : allDeps) {
+    for (String requiredNamespace : input.getRequires()) {
       CompilerInput requiredInput = null;
       boolean requiredByModuleImport = false;
       if (inputsByProvide.containsKey(requiredNamespace)) {
@@ -2189,6 +2176,14 @@ public class Compiler extends AbstractCompiler implements ErrorHandler, SourceFi
     }
   }
 
+  public Node parse(SourceFile file) {
+    initCompilerOptionsIfTesting();
+    logger.finest("Parsing: " + file.getName());
+    return new JsAst(file).getAstRoot(this);
+  }
+
+
+
   /**
    * Allow subclasses to override the default CompileOptions object.
    */
@@ -2278,6 +2273,32 @@ public class Compiler extends AbstractCompiler implements ErrorHandler, SourceFi
   }
 
   /**
+   * Converts the parse tree for each input back to JS code.
+   */
+  public String[] toSourceArray() {
+    return runInCompilerThread(new Callable<String[]>() {
+      @Override
+      public String[] call() throws Exception {
+        Tracer tracer = newTracer("toSourceArray");
+        try {
+          int numInputs = inputs.size();
+          String[] sources = new String[numInputs];
+          CodeBuilder cb = new CodeBuilder();
+          for (int i = 0; i < numInputs; i++) {
+            Node scriptNode = inputs.get(i).getAstRoot(Compiler.this);
+            cb.reset();
+            toSource(cb, i, scriptNode);
+            sources[i] = cb.toString();
+          }
+          return sources;
+        } finally {
+          stopTracer(tracer, "toSourceArray");
+        }
+      }
+    });
+  }
+
+  /**
    * Converts the parse tree for a module back to JS code.
    */
   public String toSource(final JSModule module) {
@@ -2299,6 +2320,38 @@ public class Compiler extends AbstractCompiler implements ErrorHandler, SourceFi
           toSource(cb, i, scriptNode);
         }
         return cb.toString();
+      }
+    });
+  }
+
+
+  /**
+   * Converts the parse tree for each input in a module back to JS code.
+   */
+  public String[] toSourceArray(final JSModule module) {
+    return runInCompilerThread(new Callable<String[]>() {
+      @Override
+      public String[] call() throws Exception {
+        List<CompilerInput> inputs = module.getInputs();
+        int numInputs = inputs.size();
+        if (numInputs == 0) {
+          return new String[0];
+        }
+
+        String[] sources = new String[numInputs];
+        CodeBuilder cb = new CodeBuilder();
+        for (int i = 0; i < numInputs; i++) {
+          Node scriptNode = inputs.get(i).getAstRoot(Compiler.this);
+          if (scriptNode == null) {
+            throw new IllegalArgumentException(
+                "Bad module input: " + inputs.get(i).getName());
+          }
+
+          cb.reset();
+          toSource(cb, i, scriptNode);
+          sources[i] = cb.toString();
+        }
+        return sources;
       }
     });
   }
@@ -2396,63 +2449,6 @@ public class Compiler extends AbstractCompiler implements ErrorHandler, SourceFi
         firstOutput && !n.isFromExterns() && options.shouldGenerateTypedExterns());
     builder.setTagAsStrict(firstOutput && options.shouldEmitUseStrict());
     return builder.build();
-  }
-
-  /**
-   * Converts the parse tree for each input back to JS code.
-   */
-  public String[] toSourceArray() {
-    return runInCompilerThread(new Callable<String[]>() {
-      @Override
-      public String[] call() throws Exception {
-        Tracer tracer = newTracer("toSourceArray");
-        try {
-          int numInputs = inputs.size();
-          String[] sources = new String[numInputs];
-          CodeBuilder cb = new CodeBuilder();
-          for (int i = 0; i < numInputs; i++) {
-            Node scriptNode = inputs.get(i).getAstRoot(Compiler.this);
-            cb.reset();
-            toSource(cb, i, scriptNode);
-            sources[i] = cb.toString();
-          }
-          return sources;
-        } finally {
-          stopTracer(tracer, "toSourceArray");
-        }
-      }
-    });
-  }
-
-  /**
-   * Converts the parse tree for each input in a module back to JS code.
-   */
-  public String[] toSourceArray(final JSModule module) {
-    return runInCompilerThread(new Callable<String[]>() {
-      @Override
-      public String[] call() throws Exception {
-        List<CompilerInput> inputs = module.getInputs();
-        int numInputs = inputs.size();
-        if (numInputs == 0) {
-          return new String[0];
-        }
-
-        String[] sources = new String[numInputs];
-        CodeBuilder cb = new CodeBuilder();
-        for (int i = 0; i < numInputs; i++) {
-          Node scriptNode = inputs.get(i).getAstRoot(Compiler.this);
-          if (scriptNode == null) {
-            throw new IllegalArgumentException(
-                "Bad module input: " + inputs.get(i).getName());
-          }
-
-          cb.reset();
-          toSource(cb, i, scriptNode);
-          sources[i] = cb.toString();
-        }
-        return sources;
-      }
-    });
   }
 
   /**
@@ -3499,10 +3495,6 @@ public class Compiler extends AbstractCompiler implements ErrorHandler, SourceFi
       deserializedModule.setName(newModule.getName());
     }
     return;
-  }
-
-  void initWebpackMap(ImmutableMap<String, String> inputPathByWebpackId) {
-    this.inputPathByWebpackId = inputPathByWebpackId;
   }
 
   protected CompilerExecutor createCompilerExecutor() {

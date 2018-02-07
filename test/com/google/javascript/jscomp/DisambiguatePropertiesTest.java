@@ -1901,9 +1901,9 @@ public final class DisambiguatePropertiesTest extends TypeICompilerTestCase {
         "/** @type {number} */",
         "I.prototype.x;",
         "",
-        "/** @constructor @implements {I} */",
-        "function Foo(){}",
-        "/** @type {number} */",
+        "/** @constructor @implements {I} */\n" +
+        "function Foo(){}\n" +
+        "/** @type {number} */\n" +
         "Foo.prototype.x;",
         "",
         "/** @constructor */",
@@ -2169,7 +2169,6 @@ public final class DisambiguatePropertiesTest extends TypeICompilerTestCase {
         "/**",
         " * @interface",
         " * @extends {MyIterable}",
-        " * @template T",
         " */",
         "function MyCollection() {}",
         "/**",
@@ -2480,10 +2479,7 @@ public final class DisambiguatePropertiesTest extends TypeICompilerTestCase {
         "function f(x) { return x; }",
         "f.prototype.method = function() {};");
 
-    test(
-        externs(DEFAULT_EXTERNS + externs),
-        srcs(""),
-        expected(""));
+    test(DEFAULT_EXTERNS + externs, "" , "");
   }
 
   public void testDontRenameStaticPropertiesOnBuiltins() {
@@ -2611,10 +2607,7 @@ public final class DisambiguatePropertiesTest extends TypeICompilerTestCase {
         "function Baz() {}",
         "Baz.prototype.Baz_prototype$firstElementChild;");
 
-    test(
-        externs(DEFAULT_EXTERNS + externs),
-        srcs(js),
-        expected(output));
+    test(DEFAULT_EXTERNS + externs, js, output);
   }
 
   public void testAccessOnSupertypeWithManySubtypes() {

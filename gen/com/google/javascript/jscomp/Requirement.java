@@ -27,12 +27,10 @@ public  final class Requirement extends
     onlyApplyToRegexp_ = com.google.protobuf.LazyStringArrayList.EMPTY;
     type_ = 1;
     value_ = com.google.protobuf.LazyStringArrayList.EMPTY;
-    typeMatchingStrategy_ = 1;
     javaClass_ = "";
     ruleId_ = "";
     extends_ = "";
     reportLooseTypeViolations_ = true;
-    severity_ = 1;
   }
 
   @java.lang.Override
@@ -127,47 +125,25 @@ public  final class Requirement extends
           }
           case 66: {
             com.google.protobuf.ByteString bs = input.readBytes();
-            bitField0_ |= 0x00000008;
+            bitField0_ |= 0x00000004;
             javaClass_ = bs;
             break;
           }
           case 74: {
             com.google.protobuf.ByteString bs = input.readBytes();
-            bitField0_ |= 0x00000010;
+            bitField0_ |= 0x00000008;
             ruleId_ = bs;
             break;
           }
           case 82: {
             com.google.protobuf.ByteString bs = input.readBytes();
-            bitField0_ |= 0x00000020;
+            bitField0_ |= 0x00000010;
             extends_ = bs;
             break;
           }
           case 88: {
-            bitField0_ |= 0x00000040;
+            bitField0_ |= 0x00000020;
             reportLooseTypeViolations_ = input.readBool();
-            break;
-          }
-          case 96: {
-            int rawValue = input.readEnum();
-            com.google.javascript.jscomp.Requirement.Severity value = com.google.javascript.jscomp.Requirement.Severity.valueOf(rawValue);
-            if (value == null) {
-              unknownFields.mergeVarintField(12, rawValue);
-            } else {
-              bitField0_ |= 0x00000080;
-              severity_ = rawValue;
-            }
-            break;
-          }
-          case 104: {
-            int rawValue = input.readEnum();
-            com.google.javascript.jscomp.Requirement.TypeMatchingStrategy value = com.google.javascript.jscomp.Requirement.TypeMatchingStrategy.valueOf(rawValue);
-            if (value == null) {
-              unknownFields.mergeVarintField(13, rawValue);
-            } else {
-              bitField0_ |= 0x00000004;
-              typeMatchingStrategy_ = rawValue;
-            }
             break;
           }
         }
@@ -543,296 +519,6 @@ public  final class Requirement extends
     // @@protoc_insertion_point(enum_scope:jscomp.Requirement.Type)
   }
 
-  /**
-   * Protobuf enum {@code jscomp.Requirement.TypeMatchingStrategy}
-   */
-  public enum TypeMatchingStrategy
-      implements com.google.protobuf.ProtocolMessageEnum {
-    /**
-     * <code>UNKNOWN = 0;</code>
-     */
-    UNKNOWN(0),
-    /**
-     * <pre>
-     * Matches type or any subtype. Matches types with different
-     * nullability/voidability. Allows loose matches.
-     * </pre>
-     *
-     * <code>LOOSE = 1;</code>
-     */
-    LOOSE(1),
-    /**
-     * <pre>
-     * Matches type or any subtype. Does not match types with different
-     * nullability/voidability. Allows loose matches.
-     * </pre>
-     *
-     * <code>STRICT_NULLABILITY = 2;</code>
-     */
-    STRICT_NULLABILITY(2),
-    /**
-     * <pre>
-     * Matches type or any subtype. Does not match types with different
-     * nullability/voidability. Does not allow loose matches.
-     * </pre>
-     *
-     * <code>SUBTYPES = 3;</code>
-     */
-    SUBTYPES(3),
-    /**
-     * <pre>
-     * Does not match subtypes. Does not match types with different
-     * nullability/voidability. Does not allow loose matches.
-     * </pre>
-     *
-     * <code>EXACT = 4;</code>
-     */
-    EXACT(4),
-    ;
-
-    /**
-     * <code>UNKNOWN = 0;</code>
-     */
-    public static final int UNKNOWN_VALUE = 0;
-    /**
-     * <pre>
-     * Matches type or any subtype. Matches types with different
-     * nullability/voidability. Allows loose matches.
-     * </pre>
-     *
-     * <code>LOOSE = 1;</code>
-     */
-    public static final int LOOSE_VALUE = 1;
-    /**
-     * <pre>
-     * Matches type or any subtype. Does not match types with different
-     * nullability/voidability. Allows loose matches.
-     * </pre>
-     *
-     * <code>STRICT_NULLABILITY = 2;</code>
-     */
-    public static final int STRICT_NULLABILITY_VALUE = 2;
-    /**
-     * <pre>
-     * Matches type or any subtype. Does not match types with different
-     * nullability/voidability. Does not allow loose matches.
-     * </pre>
-     *
-     * <code>SUBTYPES = 3;</code>
-     */
-    public static final int SUBTYPES_VALUE = 3;
-    /**
-     * <pre>
-     * Does not match subtypes. Does not match types with different
-     * nullability/voidability. Does not allow loose matches.
-     * </pre>
-     *
-     * <code>EXACT = 4;</code>
-     */
-    public static final int EXACT_VALUE = 4;
-
-
-    public final int getNumber() {
-      return value;
-    }
-
-    /**
-     * @deprecated Use {@link #forNumber(int)} instead.
-     */
-    @java.lang.Deprecated
-    public static TypeMatchingStrategy valueOf(int value) {
-      return forNumber(value);
-    }
-
-    public static TypeMatchingStrategy forNumber(int value) {
-      switch (value) {
-        case 0: return UNKNOWN;
-        case 1: return LOOSE;
-        case 2: return STRICT_NULLABILITY;
-        case 3: return SUBTYPES;
-        case 4: return EXACT;
-        default: return null;
-      }
-    }
-
-    public static com.google.protobuf.Internal.EnumLiteMap<TypeMatchingStrategy>
-        internalGetValueMap() {
-      return internalValueMap;
-    }
-    private static final com.google.protobuf.Internal.EnumLiteMap<
-        TypeMatchingStrategy> internalValueMap =
-          new com.google.protobuf.Internal.EnumLiteMap<TypeMatchingStrategy>() {
-            public TypeMatchingStrategy findValueByNumber(int number) {
-              return TypeMatchingStrategy.forNumber(number);
-            }
-          };
-
-    public final com.google.protobuf.Descriptors.EnumValueDescriptor
-        getValueDescriptor() {
-      return getDescriptor().getValues().get(ordinal());
-    }
-    public final com.google.protobuf.Descriptors.EnumDescriptor
-        getDescriptorForType() {
-      return getDescriptor();
-    }
-    public static final com.google.protobuf.Descriptors.EnumDescriptor
-        getDescriptor() {
-      return com.google.javascript.jscomp.Requirement.getDescriptor().getEnumTypes().get(1);
-    }
-
-    private static final TypeMatchingStrategy[] VALUES = values();
-
-    public static TypeMatchingStrategy valueOf(
-        com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
-      if (desc.getType() != getDescriptor()) {
-        throw new java.lang.IllegalArgumentException(
-          "EnumValueDescriptor is not for this type.");
-      }
-      return VALUES[desc.getIndex()];
-    }
-
-    private final int value;
-
-    private TypeMatchingStrategy(int value) {
-      this.value = value;
-    }
-
-    // @@protoc_insertion_point(enum_scope:jscomp.Requirement.TypeMatchingStrategy)
-  }
-
-  /**
-   * <pre>
-   * With what severity to report the issue by default.
-   * </pre>
-   *
-   * Protobuf enum {@code jscomp.Requirement.Severity}
-   */
-  public enum Severity
-      implements com.google.protobuf.ProtocolMessageEnum {
-    /**
-     * <pre>
-     * Currently treated the same as WARNING.
-     * </pre>
-     *
-     * <code>UNSPECIFIED = 0;</code>
-     */
-    UNSPECIFIED(0),
-    /**
-     * <pre>
-     * Allows the build to continue. Can be turned into an error by setting the
-     * jscomp_error=conformanceConfig flag.
-     * </pre>
-     *
-     * <code>WARNING = 1;</code>
-     */
-    WARNING(1),
-    /**
-     * <pre>
-     * The build fails if we are confident this is an error.
-     * This causes an error even on possible violations, e.g. when the type
-     * system is ambiguous.
-     * </pre>
-     *
-     * <code>ERROR = 2;</code>
-     */
-    ERROR(2),
-    ;
-
-    /**
-     * <pre>
-     * Currently treated the same as WARNING.
-     * </pre>
-     *
-     * <code>UNSPECIFIED = 0;</code>
-     */
-    public static final int UNSPECIFIED_VALUE = 0;
-    /**
-     * <pre>
-     * Allows the build to continue. Can be turned into an error by setting the
-     * jscomp_error=conformanceConfig flag.
-     * </pre>
-     *
-     * <code>WARNING = 1;</code>
-     */
-    public static final int WARNING_VALUE = 1;
-    /**
-     * <pre>
-     * The build fails if we are confident this is an error.
-     * This causes an error even on possible violations, e.g. when the type
-     * system is ambiguous.
-     * </pre>
-     *
-     * <code>ERROR = 2;</code>
-     */
-    public static final int ERROR_VALUE = 2;
-
-
-    public final int getNumber() {
-      return value;
-    }
-
-    /**
-     * @deprecated Use {@link #forNumber(int)} instead.
-     */
-    @java.lang.Deprecated
-    public static Severity valueOf(int value) {
-      return forNumber(value);
-    }
-
-    public static Severity forNumber(int value) {
-      switch (value) {
-        case 0: return UNSPECIFIED;
-        case 1: return WARNING;
-        case 2: return ERROR;
-        default: return null;
-      }
-    }
-
-    public static com.google.protobuf.Internal.EnumLiteMap<Severity>
-        internalGetValueMap() {
-      return internalValueMap;
-    }
-    private static final com.google.protobuf.Internal.EnumLiteMap<
-        Severity> internalValueMap =
-          new com.google.protobuf.Internal.EnumLiteMap<Severity>() {
-            public Severity findValueByNumber(int number) {
-              return Severity.forNumber(number);
-            }
-          };
-
-    public final com.google.protobuf.Descriptors.EnumValueDescriptor
-        getValueDescriptor() {
-      return getDescriptor().getValues().get(ordinal());
-    }
-    public final com.google.protobuf.Descriptors.EnumDescriptor
-        getDescriptorForType() {
-      return getDescriptor();
-    }
-    public static final com.google.protobuf.Descriptors.EnumDescriptor
-        getDescriptor() {
-      return com.google.javascript.jscomp.Requirement.getDescriptor().getEnumTypes().get(2);
-    }
-
-    private static final Severity[] VALUES = values();
-
-    public static Severity valueOf(
-        com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
-      if (desc.getType() != getDescriptor()) {
-        throw new java.lang.IllegalArgumentException(
-          "EnumValueDescriptor is not for this type.");
-      }
-      return VALUES[desc.getIndex()];
-    }
-
-    private final int value;
-
-    private Severity(int value) {
-      this.value = value;
-    }
-
-    // @@protoc_insertion_point(enum_scope:jscomp.Requirement.Severity)
-  }
-
   private int bitField0_;
   public static final int ERROR_MESSAGE_FIELD_NUMBER = 1;
   private volatile java.lang.Object errorMessage_;
@@ -1159,32 +845,6 @@ public  final class Requirement extends
     return value_.getByteString(index);
   }
 
-  public static final int TYPE_MATCHING_STRATEGY_FIELD_NUMBER = 13;
-  private int typeMatchingStrategy_;
-  /**
-   * <pre>
-   * Strategy to use for matching types in the value parameter (e.g. for
-   * BANNED_CODE_PATTERN checks).
-   * </pre>
-   *
-   * <code>optional .jscomp.Requirement.TypeMatchingStrategy type_matching_strategy = 13 [default = LOOSE];</code>
-   */
-  public boolean hasTypeMatchingStrategy() {
-    return ((bitField0_ & 0x00000004) == 0x00000004);
-  }
-  /**
-   * <pre>
-   * Strategy to use for matching types in the value parameter (e.g. for
-   * BANNED_CODE_PATTERN checks).
-   * </pre>
-   *
-   * <code>optional .jscomp.Requirement.TypeMatchingStrategy type_matching_strategy = 13 [default = LOOSE];</code>
-   */
-  public com.google.javascript.jscomp.Requirement.TypeMatchingStrategy getTypeMatchingStrategy() {
-    com.google.javascript.jscomp.Requirement.TypeMatchingStrategy result = com.google.javascript.jscomp.Requirement.TypeMatchingStrategy.valueOf(typeMatchingStrategy_);
-    return result == null ? com.google.javascript.jscomp.Requirement.TypeMatchingStrategy.LOOSE : result;
-  }
-
   public static final int JAVA_CLASS_FIELD_NUMBER = 8;
   private volatile java.lang.Object javaClass_;
   /**
@@ -1196,7 +856,7 @@ public  final class Requirement extends
    * <code>optional string java_class = 8;</code>
    */
   public boolean hasJavaClass() {
-    return ((bitField0_ & 0x00000008) == 0x00000008);
+    return ((bitField0_ & 0x00000004) == 0x00000004);
   }
   /**
    * <pre>
@@ -1253,7 +913,7 @@ public  final class Requirement extends
    * <code>optional string rule_id = 9;</code>
    */
   public boolean hasRuleId() {
-    return ((bitField0_ & 0x00000010) == 0x00000010);
+    return ((bitField0_ & 0x00000008) == 0x00000008);
   }
   /**
    * <pre>
@@ -1311,7 +971,7 @@ public  final class Requirement extends
    * <code>optional string extends = 10;</code>
    */
   public boolean hasExtends() {
-    return ((bitField0_ & 0x00000020) == 0x00000020);
+    return ((bitField0_ & 0x00000010) == 0x00000010);
   }
   /**
    * <pre>
@@ -1377,7 +1037,7 @@ public  final class Requirement extends
    * <code>optional bool report_loose_type_violations = 11 [default = true];</code>
    */
   public boolean hasReportLooseTypeViolations() {
-    return ((bitField0_ & 0x00000040) == 0x00000040);
+    return ((bitField0_ & 0x00000020) == 0x00000020);
   }
   /**
    * <pre>
@@ -1396,22 +1056,6 @@ public  final class Requirement extends
    */
   public boolean getReportLooseTypeViolations() {
     return reportLooseTypeViolations_;
-  }
-
-  public static final int SEVERITY_FIELD_NUMBER = 12;
-  private int severity_;
-  /**
-   * <code>optional .jscomp.Requirement.Severity severity = 12 [default = WARNING];</code>
-   */
-  public boolean hasSeverity() {
-    return ((bitField0_ & 0x00000080) == 0x00000080);
-  }
-  /**
-   * <code>optional .jscomp.Requirement.Severity severity = 12 [default = WARNING];</code>
-   */
-  public com.google.javascript.jscomp.Requirement.Severity getSeverity() {
-    com.google.javascript.jscomp.Requirement.Severity result = com.google.javascript.jscomp.Requirement.Severity.valueOf(severity_);
-    return result == null ? com.google.javascript.jscomp.Requirement.Severity.WARNING : result;
   }
 
   private byte memoizedIsInitialized = -1;
@@ -1454,23 +1098,17 @@ public  final class Requirement extends
     for (int i = 0; i < value_.size(); i++) {
       com.google.protobuf.GeneratedMessageV3.writeString(output, 7, value_.getRaw(i));
     }
-    if (((bitField0_ & 0x00000008) == 0x00000008)) {
+    if (((bitField0_ & 0x00000004) == 0x00000004)) {
       com.google.protobuf.GeneratedMessageV3.writeString(output, 8, javaClass_);
     }
-    if (((bitField0_ & 0x00000010) == 0x00000010)) {
+    if (((bitField0_ & 0x00000008) == 0x00000008)) {
       com.google.protobuf.GeneratedMessageV3.writeString(output, 9, ruleId_);
     }
-    if (((bitField0_ & 0x00000020) == 0x00000020)) {
+    if (((bitField0_ & 0x00000010) == 0x00000010)) {
       com.google.protobuf.GeneratedMessageV3.writeString(output, 10, extends_);
     }
-    if (((bitField0_ & 0x00000040) == 0x00000040)) {
+    if (((bitField0_ & 0x00000020) == 0x00000020)) {
       output.writeBool(11, reportLooseTypeViolations_);
-    }
-    if (((bitField0_ & 0x00000080) == 0x00000080)) {
-      output.writeEnum(12, severity_);
-    }
-    if (((bitField0_ & 0x00000004) == 0x00000004)) {
-      output.writeEnum(13, typeMatchingStrategy_);
     }
     extensionWriter.writeUntil(536870912, output);
     unknownFields.writeTo(output);
@@ -1528,26 +1166,18 @@ public  final class Requirement extends
       size += dataSize;
       size += 1 * getValueList().size();
     }
-    if (((bitField0_ & 0x00000008) == 0x00000008)) {
+    if (((bitField0_ & 0x00000004) == 0x00000004)) {
       size += com.google.protobuf.GeneratedMessageV3.computeStringSize(8, javaClass_);
     }
-    if (((bitField0_ & 0x00000010) == 0x00000010)) {
+    if (((bitField0_ & 0x00000008) == 0x00000008)) {
       size += com.google.protobuf.GeneratedMessageV3.computeStringSize(9, ruleId_);
     }
-    if (((bitField0_ & 0x00000020) == 0x00000020)) {
+    if (((bitField0_ & 0x00000010) == 0x00000010)) {
       size += com.google.protobuf.GeneratedMessageV3.computeStringSize(10, extends_);
     }
-    if (((bitField0_ & 0x00000040) == 0x00000040)) {
+    if (((bitField0_ & 0x00000020) == 0x00000020)) {
       size += com.google.protobuf.CodedOutputStream
         .computeBoolSize(11, reportLooseTypeViolations_);
-    }
-    if (((bitField0_ & 0x00000080) == 0x00000080)) {
-      size += com.google.protobuf.CodedOutputStream
-        .computeEnumSize(12, severity_);
-    }
-    if (((bitField0_ & 0x00000004) == 0x00000004)) {
-      size += com.google.protobuf.CodedOutputStream
-        .computeEnumSize(13, typeMatchingStrategy_);
     }
     size += extensionsSerializedSize();
     size += unknownFields.getSerializedSize();
@@ -1586,10 +1216,6 @@ public  final class Requirement extends
     }
     result = result && getValueList()
         .equals(other.getValueList());
-    result = result && (hasTypeMatchingStrategy() == other.hasTypeMatchingStrategy());
-    if (hasTypeMatchingStrategy()) {
-      result = result && typeMatchingStrategy_ == other.typeMatchingStrategy_;
-    }
     result = result && (hasJavaClass() == other.hasJavaClass());
     if (hasJavaClass()) {
       result = result && getJavaClass()
@@ -1609,10 +1235,6 @@ public  final class Requirement extends
     if (hasReportLooseTypeViolations()) {
       result = result && (getReportLooseTypeViolations()
           == other.getReportLooseTypeViolations());
-    }
-    result = result && (hasSeverity() == other.hasSeverity());
-    if (hasSeverity()) {
-      result = result && severity_ == other.severity_;
     }
     result = result && unknownFields.equals(other.unknownFields);
     result = result &&
@@ -1655,10 +1277,6 @@ public  final class Requirement extends
       hash = (37 * hash) + VALUE_FIELD_NUMBER;
       hash = (53 * hash) + getValueList().hashCode();
     }
-    if (hasTypeMatchingStrategy()) {
-      hash = (37 * hash) + TYPE_MATCHING_STRATEGY_FIELD_NUMBER;
-      hash = (53 * hash) + typeMatchingStrategy_;
-    }
     if (hasJavaClass()) {
       hash = (37 * hash) + JAVA_CLASS_FIELD_NUMBER;
       hash = (53 * hash) + getJavaClass().hashCode();
@@ -1675,10 +1293,6 @@ public  final class Requirement extends
       hash = (37 * hash) + REPORT_LOOSE_TYPE_VIOLATIONS_FIELD_NUMBER;
       hash = (53 * hash) + com.google.protobuf.Internal.hashBoolean(
           getReportLooseTypeViolations());
-    }
-    if (hasSeverity()) {
-      hash = (37 * hash) + SEVERITY_FIELD_NUMBER;
-      hash = (53 * hash) + severity_;
     }
     hash = hashFields(hash, getExtensionFields());
     hash = (29 * hash) + unknownFields.hashCode();
@@ -1818,18 +1432,14 @@ public  final class Requirement extends
       bitField0_ = (bitField0_ & ~0x00000020);
       value_ = com.google.protobuf.LazyStringArrayList.EMPTY;
       bitField0_ = (bitField0_ & ~0x00000040);
-      typeMatchingStrategy_ = 1;
-      bitField0_ = (bitField0_ & ~0x00000080);
       javaClass_ = "";
-      bitField0_ = (bitField0_ & ~0x00000100);
+      bitField0_ = (bitField0_ & ~0x00000080);
       ruleId_ = "";
-      bitField0_ = (bitField0_ & ~0x00000200);
+      bitField0_ = (bitField0_ & ~0x00000100);
       extends_ = "";
-      bitField0_ = (bitField0_ & ~0x00000400);
+      bitField0_ = (bitField0_ & ~0x00000200);
       reportLooseTypeViolations_ = true;
-      bitField0_ = (bitField0_ & ~0x00000800);
-      severity_ = 1;
-      bitField0_ = (bitField0_ & ~0x00001000);
+      bitField0_ = (bitField0_ & ~0x00000400);
       return this;
     }
 
@@ -1890,27 +1500,19 @@ public  final class Requirement extends
       if (((from_bitField0_ & 0x00000080) == 0x00000080)) {
         to_bitField0_ |= 0x00000004;
       }
-      result.typeMatchingStrategy_ = typeMatchingStrategy_;
+      result.javaClass_ = javaClass_;
       if (((from_bitField0_ & 0x00000100) == 0x00000100)) {
         to_bitField0_ |= 0x00000008;
       }
-      result.javaClass_ = javaClass_;
+      result.ruleId_ = ruleId_;
       if (((from_bitField0_ & 0x00000200) == 0x00000200)) {
         to_bitField0_ |= 0x00000010;
       }
-      result.ruleId_ = ruleId_;
+      result.extends_ = extends_;
       if (((from_bitField0_ & 0x00000400) == 0x00000400)) {
         to_bitField0_ |= 0x00000020;
       }
-      result.extends_ = extends_;
-      if (((from_bitField0_ & 0x00000800) == 0x00000800)) {
-        to_bitField0_ |= 0x00000040;
-      }
       result.reportLooseTypeViolations_ = reportLooseTypeViolations_;
-      if (((from_bitField0_ & 0x00001000) == 0x00001000)) {
-        to_bitField0_ |= 0x00000080;
-      }
-      result.severity_ = severity_;
       result.bitField0_ = to_bitField0_;
       onBuilt();
       return result;
@@ -2034,29 +1636,23 @@ public  final class Requirement extends
         }
         onChanged();
       }
-      if (other.hasTypeMatchingStrategy()) {
-        setTypeMatchingStrategy(other.getTypeMatchingStrategy());
-      }
       if (other.hasJavaClass()) {
-        bitField0_ |= 0x00000100;
+        bitField0_ |= 0x00000080;
         javaClass_ = other.javaClass_;
         onChanged();
       }
       if (other.hasRuleId()) {
-        bitField0_ |= 0x00000200;
+        bitField0_ |= 0x00000100;
         ruleId_ = other.ruleId_;
         onChanged();
       }
       if (other.hasExtends()) {
-        bitField0_ |= 0x00000400;
+        bitField0_ |= 0x00000200;
         extends_ = other.extends_;
         onChanged();
       }
       if (other.hasReportLooseTypeViolations()) {
         setReportLooseTypeViolations(other.getReportLooseTypeViolations());
-      }
-      if (other.hasSeverity()) {
-        setSeverity(other.getSeverity());
       }
       this.mergeExtensionFields(other);
       this.mergeUnknownFields(other.unknownFields);
@@ -2935,62 +2531,6 @@ public  final class Requirement extends
       return this;
     }
 
-    private int typeMatchingStrategy_ = 1;
-    /**
-     * <pre>
-     * Strategy to use for matching types in the value parameter (e.g. for
-     * BANNED_CODE_PATTERN checks).
-     * </pre>
-     *
-     * <code>optional .jscomp.Requirement.TypeMatchingStrategy type_matching_strategy = 13 [default = LOOSE];</code>
-     */
-    public boolean hasTypeMatchingStrategy() {
-      return ((bitField0_ & 0x00000080) == 0x00000080);
-    }
-    /**
-     * <pre>
-     * Strategy to use for matching types in the value parameter (e.g. for
-     * BANNED_CODE_PATTERN checks).
-     * </pre>
-     *
-     * <code>optional .jscomp.Requirement.TypeMatchingStrategy type_matching_strategy = 13 [default = LOOSE];</code>
-     */
-    public com.google.javascript.jscomp.Requirement.TypeMatchingStrategy getTypeMatchingStrategy() {
-      com.google.javascript.jscomp.Requirement.TypeMatchingStrategy result = com.google.javascript.jscomp.Requirement.TypeMatchingStrategy.valueOf(typeMatchingStrategy_);
-      return result == null ? com.google.javascript.jscomp.Requirement.TypeMatchingStrategy.LOOSE : result;
-    }
-    /**
-     * <pre>
-     * Strategy to use for matching types in the value parameter (e.g. for
-     * BANNED_CODE_PATTERN checks).
-     * </pre>
-     *
-     * <code>optional .jscomp.Requirement.TypeMatchingStrategy type_matching_strategy = 13 [default = LOOSE];</code>
-     */
-    public Builder setTypeMatchingStrategy(com.google.javascript.jscomp.Requirement.TypeMatchingStrategy value) {
-      if (value == null) {
-        throw new NullPointerException();
-      }
-      bitField0_ |= 0x00000080;
-      typeMatchingStrategy_ = value.getNumber();
-      onChanged();
-      return this;
-    }
-    /**
-     * <pre>
-     * Strategy to use for matching types in the value parameter (e.g. for
-     * BANNED_CODE_PATTERN checks).
-     * </pre>
-     *
-     * <code>optional .jscomp.Requirement.TypeMatchingStrategy type_matching_strategy = 13 [default = LOOSE];</code>
-     */
-    public Builder clearTypeMatchingStrategy() {
-      bitField0_ = (bitField0_ & ~0x00000080);
-      typeMatchingStrategy_ = 1;
-      onChanged();
-      return this;
-    }
-
     private java.lang.Object javaClass_ = "";
     /**
      * <pre>
@@ -3001,7 +2541,7 @@ public  final class Requirement extends
      * <code>optional string java_class = 8;</code>
      */
     public boolean hasJavaClass() {
-      return ((bitField0_ & 0x00000100) == 0x00000100);
+      return ((bitField0_ & 0x00000080) == 0x00000080);
     }
     /**
      * <pre>
@@ -3059,7 +2599,7 @@ public  final class Requirement extends
       if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00000100;
+  bitField0_ |= 0x00000080;
       javaClass_ = value;
       onChanged();
       return this;
@@ -3073,7 +2613,7 @@ public  final class Requirement extends
      * <code>optional string java_class = 8;</code>
      */
     public Builder clearJavaClass() {
-      bitField0_ = (bitField0_ & ~0x00000100);
+      bitField0_ = (bitField0_ & ~0x00000080);
       javaClass_ = getDefaultInstance().getJavaClass();
       onChanged();
       return this;
@@ -3091,7 +2631,7 @@ public  final class Requirement extends
       if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00000100;
+  bitField0_ |= 0x00000080;
       javaClass_ = value;
       onChanged();
       return this;
@@ -3107,7 +2647,7 @@ public  final class Requirement extends
      * <code>optional string rule_id = 9;</code>
      */
     public boolean hasRuleId() {
-      return ((bitField0_ & 0x00000200) == 0x00000200);
+      return ((bitField0_ & 0x00000100) == 0x00000100);
     }
     /**
      * <pre>
@@ -3165,7 +2705,7 @@ public  final class Requirement extends
       if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00000200;
+  bitField0_ |= 0x00000100;
       ruleId_ = value;
       onChanged();
       return this;
@@ -3179,7 +2719,7 @@ public  final class Requirement extends
      * <code>optional string rule_id = 9;</code>
      */
     public Builder clearRuleId() {
-      bitField0_ = (bitField0_ & ~0x00000200);
+      bitField0_ = (bitField0_ & ~0x00000100);
       ruleId_ = getDefaultInstance().getRuleId();
       onChanged();
       return this;
@@ -3197,7 +2737,7 @@ public  final class Requirement extends
       if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00000200;
+  bitField0_ |= 0x00000100;
       ruleId_ = value;
       onChanged();
       return this;
@@ -3214,7 +2754,7 @@ public  final class Requirement extends
      * <code>optional string extends = 10;</code>
      */
     public boolean hasExtends() {
-      return ((bitField0_ & 0x00000400) == 0x00000400);
+      return ((bitField0_ & 0x00000200) == 0x00000200);
     }
     /**
      * <pre>
@@ -3275,7 +2815,7 @@ public  final class Requirement extends
       if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00000400;
+  bitField0_ |= 0x00000200;
       extends_ = value;
       onChanged();
       return this;
@@ -3290,7 +2830,7 @@ public  final class Requirement extends
      * <code>optional string extends = 10;</code>
      */
     public Builder clearExtends() {
-      bitField0_ = (bitField0_ & ~0x00000400);
+      bitField0_ = (bitField0_ & ~0x00000200);
       extends_ = getDefaultInstance().getExtends();
       onChanged();
       return this;
@@ -3309,7 +2849,7 @@ public  final class Requirement extends
       if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x00000400;
+  bitField0_ |= 0x00000200;
       extends_ = value;
       onChanged();
       return this;
@@ -3332,7 +2872,7 @@ public  final class Requirement extends
      * <code>optional bool report_loose_type_violations = 11 [default = true];</code>
      */
     public boolean hasReportLooseTypeViolations() {
-      return ((bitField0_ & 0x00000800) == 0x00000800);
+      return ((bitField0_ & 0x00000400) == 0x00000400);
     }
     /**
      * <pre>
@@ -3368,7 +2908,7 @@ public  final class Requirement extends
      * <code>optional bool report_loose_type_violations = 11 [default = true];</code>
      */
     public Builder setReportLooseTypeViolations(boolean value) {
-      bitField0_ |= 0x00000800;
+      bitField0_ |= 0x00000400;
       reportLooseTypeViolations_ = value;
       onChanged();
       return this;
@@ -3389,44 +2929,8 @@ public  final class Requirement extends
      * <code>optional bool report_loose_type_violations = 11 [default = true];</code>
      */
     public Builder clearReportLooseTypeViolations() {
-      bitField0_ = (bitField0_ & ~0x00000800);
+      bitField0_ = (bitField0_ & ~0x00000400);
       reportLooseTypeViolations_ = true;
-      onChanged();
-      return this;
-    }
-
-    private int severity_ = 1;
-    /**
-     * <code>optional .jscomp.Requirement.Severity severity = 12 [default = WARNING];</code>
-     */
-    public boolean hasSeverity() {
-      return ((bitField0_ & 0x00001000) == 0x00001000);
-    }
-    /**
-     * <code>optional .jscomp.Requirement.Severity severity = 12 [default = WARNING];</code>
-     */
-    public com.google.javascript.jscomp.Requirement.Severity getSeverity() {
-      com.google.javascript.jscomp.Requirement.Severity result = com.google.javascript.jscomp.Requirement.Severity.valueOf(severity_);
-      return result == null ? com.google.javascript.jscomp.Requirement.Severity.WARNING : result;
-    }
-    /**
-     * <code>optional .jscomp.Requirement.Severity severity = 12 [default = WARNING];</code>
-     */
-    public Builder setSeverity(com.google.javascript.jscomp.Requirement.Severity value) {
-      if (value == null) {
-        throw new NullPointerException();
-      }
-      bitField0_ |= 0x00001000;
-      severity_ = value.getNumber();
-      onChanged();
-      return this;
-    }
-    /**
-     * <code>optional .jscomp.Requirement.Severity severity = 12 [default = WARNING];</code>
-     */
-    public Builder clearSeverity() {
-      bitField0_ = (bitField0_ & ~0x00001000);
-      severity_ = 1;
       onChanged();
       return this;
     }

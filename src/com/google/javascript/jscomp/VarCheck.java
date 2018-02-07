@@ -20,8 +20,8 @@ import static com.google.common.base.Preconditions.checkState;
 
 import com.google.javascript.jscomp.Es6SyntacticScopeCreator.RedeclarationHandler;
 import com.google.javascript.jscomp.NodeTraversal.AbstractPostOrderCallback;
-import com.google.javascript.jscomp.NodeTraversal.Callback;
 import com.google.javascript.rhino.IR;
+import com.google.javascript.rhino.JSDocInfo;
 import com.google.javascript.rhino.JSDocInfoBuilder;
 import com.google.javascript.rhino.Node;
 import java.util.ArrayList;
@@ -299,15 +299,7 @@ class VarCheck extends AbstractPostOrderCallback implements
    * A check for name references in the externs inputs. These used to prevent
    * a variable from getting renamed, but no longer have any effect.
    */
-  private class NameRefInExternsCheck implements Callback {
-
-    @Override
-    public boolean shouldTraverse(NodeTraversal t, Node n, Node parent) {
-      // Type summaries are generated from code rather than hand-written,
-      // so warning about name references there would usually not be helpful.
-      return !n.isScript() || !NodeUtil.isFromTypeSummary(n);
-    }
-
+  private class NameRefInExternsCheck extends AbstractPostOrderCallback {
     @Override
     public void visit(NodeTraversal t, Node n, Node parent) {
       if (n.isName()) {
@@ -373,19 +365,32 @@ class VarCheck extends AbstractPostOrderCallback implements
     }
   }
 
-  /** Returns true if duplication warnings are suppressed on either n or origVar. */
-  static boolean hasDuplicateDeclarationSuppression(
-      AbstractCompiler compiler, Node n, Node origVar) {
-    // For VarCheck and VariableReferenceCheck, variables in externs do not generate duplicate
-    // warnings.
+
+  /**
+   * @param n The name node to check.
+   * @param origVar The associated Var.
+   * @return Whether duplicated declarations warnings should be suppressed
+   *     for the given node.
+   */
+  static boolean hasDuplicateDeclarationSuppression(Node n, Var origVar) {
+    checkState(n.isName() || n.isRest() || n.isStringKey() || n.isImportStar(), n);
+    Node parent = n.getParent();
+    Node origParent = origVar.getParentNode();
+
     if (isExternNamespace(n)) {
       return true;
     }
-    return TypeValidator.hasDuplicateDeclarationSuppression(compiler, origVar);
+
+    JSDocInfo info = parent.getJSDocInfo();
+    if (info != null && info.getSuppressions().contains("duplicate")) {
+      return true;
+    }
+
+    info = origParent.getJSDocInfo();
+    return (info != null && info.getSuppressions().contains("duplicate"));
   }
 
-  /** Returns true if n is the name of a variable that declares a namespace in an externs file. */
-  static boolean isExternNamespace(Node n) {
+  private static boolean isExternNamespace(Node n) {
     return n.getParent().isVar() && n.isFromExterns() && NodeUtil.isNamespaceDecl(n);
   }
 
@@ -429,8 +434,8 @@ class VarCheck extends AbstractPostOrderCallback implements
           return;
         }
 
-        boolean allowDupe = hasDuplicateDeclarationSuppression(compiler, n, origVar.getNameNode());
-        if (VarCheck.isExternNamespace(n)) {
+        boolean allowDupe = hasDuplicateDeclarationSuppression(n, origVar);
+        if (isExternNamespace(n)) {
           this.dupDeclNodes.add(parent);
           return;
         }

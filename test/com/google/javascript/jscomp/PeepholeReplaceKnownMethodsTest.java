@@ -151,9 +151,8 @@ public final class PeepholeReplaceKnownMethodsTest extends TypeICompilerTestCase
 
   public void testStringJoinAdd_b1992789() {
     fold("x = ['a'].join('')", "x = \"a\"");
-    foldSame("x = [foo()].join('')");
-    foldSame("[foo()].join('')");
-    fold("[null].join('')", "''");
+    fold("x = [foo()].join('')", "x = '' + foo()");
+    fold("[foo()].join('')", "'' + foo()");
   }
 
   public void testFoldStringSubstr() {
@@ -289,7 +288,7 @@ public final class PeepholeReplaceKnownMethodsTest extends TypeICompilerTestCase
 
   public void testJoinBug() {
     fold("var x = [].join();", "var x = '';");
-    foldSame("var x = [x].join();");
+    fold("var x = [x].join();", "var x = '' + x;");
     foldSame("var x = [x,y].join();");
     foldSame("var x = [x,y,z].join();");
 

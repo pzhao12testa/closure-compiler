@@ -606,20 +606,21 @@ class PeepholeReplaceKnownMethods extends AbstractPeepholeOptimization {
         if (foldedStringNode.isSpread() || foldedSize > originalSize) {
           return n;
         }
-        if (foldedStringNode.isString()) {
-          arrayNode.detachChildren();
-          n.replaceWith(foldedStringNode);
-          compiler.reportChangeToEnclosingScope(foldedStringNode);
-          return foldedStringNode;
-        } else {
-          // Because of special case behavior for `null` and `undefined` values, there's no safe way
-          // to convert `[someNonStringValue].join()` to something shorter.
-          // e.g. String(someNonStringValue) would turn `null` into `"null"`, which isn't right.
-          return n;
+        arrayNode.detachChildren();
+        if (!foldedStringNode.isString()) {
+          // If the Node is not a string literal, ensure that
+          // it is coerced to a string.
+          Node replacement = IR.add(
+              IR.string("").srcref(n),
+              foldedStringNode);
+          foldedStringNode = replacement;
         }
+        n.getParent().replaceChild(n, foldedStringNode);
+        compiler.reportChangeToEnclosingScope(foldedStringNode);
+        return foldedStringNode;
       default:
+        // No folding could actually be performed.
         if (arrayNode.hasXChildren(arrayFoldedChildren.size())) {
-          // No folding could actually be performed.
           return n;
         }
         int kJoinOverhead = "[].join()".length();

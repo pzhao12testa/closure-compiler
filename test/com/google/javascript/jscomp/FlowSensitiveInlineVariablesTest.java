@@ -749,9 +749,7 @@ public final class FlowSensitiveInlineVariablesTest extends CompilerTestCase  {
   }
 
   private void inline(String input, String expected) {
-    test(
-        externs(EXTERN_FUNCTIONS),
-        srcs("function _func() {" + input + "}"),
-        expected("function _func() {" + expected + "}"));
+    test(EXTERN_FUNCTIONS, "function _func() {" + input + "}",
+        "function _func() {" + expected + "}");
   }
 }

@@ -18,6 +18,7 @@ package com.google.javascript.jscomp;
 
 import com.google.javascript.rhino.Node;
 import com.google.javascript.rhino.Token;
+
 import junit.framework.TestCase;
 
 public final class DotFormatterTest extends TestCase {
@@ -82,7 +83,11 @@ public final class DotFormatterTest extends TestCase {
     test(expected, ast);
   }
 
-  private void test(String expected, Node ast) throws Exception {
-    assertEquals(expected, DotFormatter.toDot(ast));
+  private void test(String expected, Node ast) {
+    try {
+      assertEquals(expected, DotFormatter.toDot(ast));
+    } catch (java.io.IOException e) {
+      fail("Tests failed with IOExceptions");
+    }
   }
 }

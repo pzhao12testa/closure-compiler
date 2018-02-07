@@ -23,11 +23,7 @@
  *            body: (string|undefined), tag: (string|undefined),
  *            icon: (string|undefined),
  *            requireInteraction: (boolean|undefined),
- *            actions: (!Array<!NotificationAction>|undefined),
- *            data: (*|undefined)}}
- * TODO(user): change the type of data to a serializable object
- * (https://html.spec.whatwg.org/multipage/structured-data.html).
- *
+ *            actions: (!Array<!NotificationAction>|undefined)}}
  * @see http://notifications.spec.whatwg.org/#notificationoptions
  */
 var NotificationOptions;
@@ -113,11 +109,6 @@ Notification.prototype.tag;
  * @deprecated Use NotificationOptions.tag instead.
  */
 Notification.prototype.replaceId;
-
-/**
- * @type {*}
- */
-Notification.prototype.data;
 
 /**
  * The string used by clients to specify the directionality (rtl/ltr) of the
@@ -241,5 +232,5 @@ Window.prototype.webkitNotifications;
  */
 function NotificationEvent(type, opt_eventInitDict) {}
 
-/** @type {!Notification} */
+/** @type {?Notification} */
 NotificationEvent.prototype.notification;

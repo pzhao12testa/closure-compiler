@@ -56,9 +56,7 @@ public class DiagnosticGroups {
           "newCheckTypes",
           "newCheckTypesCompatibility",
           "newCheckTypesExtraChecks",
-          "missingSourcesWarnings",
-          // TODO(johnlenz): "strictMissingProperties" is here until it has a shake down cruise.
-          "strictMissingProperties");
+          "missingSourcesWarnings");
 
   public DiagnosticGroups() {}
 
@@ -140,7 +138,6 @@ public class DiagnosticGroups {
           + "missingSourcesWarnings, "
           + "reportUnknownTypes, "
           + "suspiciousCode, "
-          + "strictMissingProperties, "
           + "strictModuleDepCheck, "
           + "typeInvalidation, "
           + "undefinedNames, "
@@ -398,11 +395,6 @@ public class DiagnosticGroups {
       DiagnosticGroups.registerGroup("oldReportUnknownTypes", // undocumented
           TypeCheck.UNKNOWN_EXPR_TYPE);
 
-  public static final DiagnosticGroup STRICT_MISSING_PROPERTIES =
-      DiagnosticGroups.registerGroup("strictMissingProperties",
-          TypeCheck.STRICT_INEXISTENT_PROPERTY,
-          TypeCheck.STRICT_INEXISTENT_PROPERTY_WITH_SUGGESTION);
-
   public static final DiagnosticGroup REPORT_UNKNOWN_TYPES =
       DiagnosticGroups.registerGroup("reportUnknownTypes",
           TypeCheck.UNKNOWN_EXPR_TYPE,
@@ -452,7 +444,6 @@ public class DiagnosticGroups {
           VarCheck.VAR_MULTIPLY_DECLARED_ERROR,
           TypeValidator.DUP_VAR_DECLARATION,
           TypeValidator.DUP_VAR_DECLARATION_TYPE_MISMATCH,
-          TypeCheck.FUNCTION_MASKS_VARIABLE,
           VariableReferenceCheck.REDECLARED_VARIABLE,
           GlobalTypeInfoCollector.REDECLARED_PROPERTY);
 

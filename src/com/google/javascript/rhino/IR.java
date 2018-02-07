@@ -45,7 +45,6 @@ import java.util.List;
 
 /**
  * An AST construction helper class
- *
  * @author johnlenz@google.com (John Lenz)
  */
 public class IR {
@@ -118,7 +117,7 @@ public class IR {
   }
 
   public static Node block(Node stmt) {
-    checkState(mayBeStatement(stmt), "Block node cannot contain %s", stmt.getToken());
+    checkState(mayBeStatement(stmt));
     Node block = new Node(Token.BLOCK, stmt);
     return block;
   }
@@ -173,16 +172,16 @@ public class IR {
     return declaration(lhs, value, Token.VAR);
   }
 
-  public static Node var(Node lhs) {
-    return declaration(lhs, Token.VAR);
-  }
-
   public static Node let(Node lhs, Node value) {
     return declaration(lhs, value, Token.LET);
   }
 
   public static Node constNode(Node lhs, Node value) {
     return declaration(lhs, value, Token.CONST);
+  }
+
+  public static Node var(Node lhs) {
+    return declaration(lhs, Token.VAR);
   }
 
   public static Node declaration(Node lhs, Token type) {
@@ -220,14 +219,14 @@ public class IR {
     return new Node(Token.YIELD);
   }
 
-  public static Node yield(Node expr) {
-    checkState(mayBeExpression(expr));
-    return new Node(Token.YIELD, expr);
-  }
-
   public static Node await(Node expr) {
     checkState(mayBeExpression(expr));
     return new Node(Token.AWAIT, expr);
+  }
+
+  public static Node yield(Node expr) {
+    checkState(mayBeExpression(expr));
+    return new Node(Token.YIELD, expr);
   }
 
   public static Node throwNode(Node expr) {
@@ -683,8 +682,6 @@ public class IR {
       case DO:
       case EXPR_RESULT:
       case FOR:
-      case FOR_IN:
-      case FOR_OF:
       case IF:
       case LABEL:
       case LET:

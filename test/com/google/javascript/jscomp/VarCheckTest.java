@@ -232,17 +232,6 @@ public final class VarCheckTest extends CompilerTestCase {
     testSame("var asdf;", "asdf;");
   }
 
-  public void testVarReferenceInTypeSummary() {
-    testSame(
-        lines(
-            "/** @typeSummary */",
-            "var goog;",
-            "goog.addSingletonGetter;",
-            "class Foo {}",
-            "goog.addSingletonGetter(Foo);"),
-        "Foo.getInstance();");
-  }
-
   public void testFunctionDeclarationInExterns() {
     testSame("function foo(x = 7) {}", "foo();");
     testSame("function foo(...rest) {}", "foo(1,2,3);");
@@ -302,10 +291,7 @@ public final class VarCheckTest extends CompilerTestCase {
     testSame("asdf.foo;", "var asdf;", error(VarCheck.UNDEFINED_EXTERN_VAR_ERROR));
 
     externValidationErrorLevel = CheckLevel.OFF;
-    test(
-        externs("asdf.foo;"),
-        srcs("var asdf;"),
-        expected("var /** @suppress {duplicate} */ asdf;"));
+    test("asdf.foo;", "var asdf;", "var /** @suppress {duplicate} */ asdf;");
   }
 
   public void testPropReferenceInExterns4() {
@@ -575,14 +561,6 @@ public final class VarCheckTest extends CompilerTestCase {
 
   public void testRedeclaration3() {
     String js = " /** @suppress {duplicate} */ var a; var a; ";
-    testSame(js);
-  }
-
-  public void testRedeclaration4() {
-    String js =
-        " /** @fileoverview @suppress {duplicate} */\n"
-            + " /** @type {string} */ var a;\n"
-            + " var a; ";
     testSame(js);
   }
 

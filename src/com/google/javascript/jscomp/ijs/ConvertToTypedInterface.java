@@ -59,7 +59,6 @@ public class ConvertToTypedInterface implements CompilerPass {
 
   private static final ImmutableSet<String> CALLS_TO_PRESERVE =
       ImmutableSet.of(
-          "goog.addSingletonGetter",
           "goog.define",
           "goog.forwardDeclare",
           "goog.module",
@@ -283,8 +282,7 @@ public class ConvertToTypedInterface implements CompilerPass {
         }
         // A name declaration with more than one LHS is split into separate declarations.
         Node rhs = lhsToSplit.hasChildren() ? lhsToSplit.removeFirstChild() : null;
-        Node newDeclaration =
-            NodeUtil.newDeclaration(lhsToSplit.detach(), rhs, n.getToken()).srcref(n);
+        Node newDeclaration = IR.declaration(lhsToSplit.detach(), rhs, n.getToken()).srcref(n);
         n.getParent().addChildAfter(newDeclaration, n);
         t.reportCodeChange();
       }
@@ -342,7 +340,7 @@ public class ConvertToTypedInterface implements CompilerPass {
         case VAR:
         case CONST:
         case LET:
-          checkState(n.hasOneChild(), n);
+          checkState(n.hasOneChild());
           propagateJsdocAtName(t, n.getFirstChild());
           recordNameDeclaration(n);
           break;
@@ -549,7 +547,6 @@ public class ConvertToTypedInterface implements CompilerPass {
           || (isExport && (rhs.isQualifiedName() || rhs.isObjectLit()))
           || (jsdoc != null && jsdoc.isConstructor() && rhs.isQualifiedName())
           || isAliasDefinition(decl)
-          || (nameNode.matchesQualifiedName("goog.global") && rhs.isThis())
           || (rhs.isObjectLit()
               && !rhs.hasChildren()
               && (jsdoc == null || !JsdocUtil.hasAnnotatedType(jsdoc)))) {

@@ -211,23 +211,17 @@ public final class CheckSideEffectsTest extends CompilerTestCase {
 
     testSame(externs, "alert(noSideEffectsExtern());");
 
-    test(
-        externs(externs),
-        srcs("noSideEffectsExtern();"),
-        expected("JSCOMPILER_PRESERVE(noSideEffectsExtern());"),
-        warning(
-            e,
-            "Suspicious code. The result of the extern function call "
-                + "'noSideEffectsExtern' is not being used."));
+    test(externs,
+        "noSideEffectsExtern();",
+        "JSCOMPILER_PRESERVE(noSideEffectsExtern());",
+        warning(e, "Suspicious code. The result of the extern function call "
+            + "'noSideEffectsExtern' is not being used."));
 
-    test(
-        externs(externs),
-        srcs("noSideEffectsExtern2();"),
-        expected("JSCOMPILER_PRESERVE(noSideEffectsExtern2());"),
-        warning(
-            e,
-            "Suspicious code. The result of the extern function call "
-                + "'noSideEffectsExtern2' is not being used."));
+    test(externs,
+        "noSideEffectsExtern2();",
+        "JSCOMPILER_PRESERVE(noSideEffectsExtern2());",
+        warning(e, "Suspicious code. The result of the extern function call "
+            + "'noSideEffectsExtern2' is not being used."));
 
     testSame(externs, "hasSideEffectsExtern()");
 
@@ -247,14 +241,11 @@ public final class CheckSideEffectsTest extends CompilerTestCase {
 
     testSame(externs, "alert(foo.noSideEffectsExtern());");
 
-    test(
-        externs(externs),
-        srcs("foo.noSideEffectsExtern();"),
-        expected("JSCOMPILER_PRESERVE(foo.noSideEffectsExtern());"),
-        warning(
-            e,
-            "Suspicious code. The result of the extern function call "
-                + "'foo.noSideEffectsExtern' is not being used."));
+    test(externs,
+        "foo.noSideEffectsExtern();",
+        "JSCOMPILER_PRESERVE(foo.noSideEffectsExtern());",
+        warning(e, "Suspicious code. The result of the extern function call "
+            + "'foo.noSideEffectsExtern' is not being used."));
 
     // Methods redefined in inner scopes should not trigger a warning
     testSame(

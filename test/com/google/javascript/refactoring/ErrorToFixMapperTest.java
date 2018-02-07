@@ -798,56 +798,6 @@ public class ErrorToFixMapperTest {
   }
 
   @Test
-  public void testBothFormsOfRequire1() {
-    assertChanges(
-        LINE_JOINER.join(
-            "goog.module('example');",
-            "",
-            "const SoyRenderer = goog.require('foo.bar.SoyRenderer');",
-            "goog.require('foo.bar.SoyRenderer');",
-            "",
-            "function setUp() {",
-            "  const soyService = new foo.bar.SoyRenderer();",
-            "}",
-            ""),
-        LINE_JOINER.join(
-            "goog.module('example');",
-            "",
-            "const SoyRenderer = goog.require('foo.bar.SoyRenderer');",
-            "function setUp() {",
-            "  const soyService = new SoyRenderer();",
-            "}",
-            ""));
-  }
-
-  @Test
-  public void testBothFormsOfRequire2() {
-    // After this change, a second run will remove the duplicate require.
-    // See testBothFormsOfRequire1
-    assertChanges(
-        LINE_JOINER.join(
-            "goog.module('example');",
-            "",
-            "goog.require('foo.bar.SoyRenderer');",
-            "const SoyRenderer = goog.require('foo.bar.SoyRenderer');",
-            "",
-            "function setUp() {",
-            "  const soyService = new foo.bar.SoyRenderer();",
-            "}",
-            ""),
-        LINE_JOINER.join(
-            "goog.module('example');",
-            "",
-            "const SoyRenderer = goog.require('foo.bar.SoyRenderer');",
-            "goog.require('foo.bar.SoyRenderer');",
-            "",
-            "function setUp() {",
-            "  const soyService = new SoyRenderer();",
-            "}",
-            ""));
-  }
-
-  @Test
   public void testStandaloneVarDoesntCrashMissingRequire() {
     assertChanges(
         LINE_JOINER.join(

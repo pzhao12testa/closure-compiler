@@ -100,7 +100,6 @@ public final class ParserTest extends BaseJSTypeTestCase {
     parse("(-x)**y");
     // Parens are not required for unary operator on the right operand
     parse("x**-y");
-    parse("x/y**z");
 
     mode = LanguageMode.ECMASCRIPT6;
     strictMode = SLOPPY;
@@ -2211,7 +2210,7 @@ public final class ParserTest extends BaseJSTypeTestCase {
     testTemplateLiteral("`hello ${name} ${world}`.length;");
   }
 
-  public void testTemplateLiterals() {
+  public void testTemplateLiteral() {
     expectFeatures(Feature.TEMPLATE_LITERALS);
     testTemplateLiteral("``");
     testTemplateLiteral("`\"`");

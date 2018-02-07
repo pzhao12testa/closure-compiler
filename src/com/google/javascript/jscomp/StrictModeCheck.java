@@ -183,9 +183,6 @@ class StrictModeCheck extends AbstractPostOrderCallback
       if (key.isEmpty() || key.isComputedProp()) {
         continue;
       }
-      if (key.isSpread()) {
-        continue;
-      }
       String keyName = key.getString();
       if (!key.isSetterDef()) {
         // normal property and getter cases

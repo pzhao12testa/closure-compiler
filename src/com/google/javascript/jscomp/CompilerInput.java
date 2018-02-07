@@ -61,7 +61,6 @@ public class CompilerInput implements SourceAst, DependencyInfo {
   private final List<String> extraRequires = new ArrayList<>();
   private final List<String> extraProvides = new ArrayList<>();
   private final List<String> orderedRequires = new ArrayList<>();
-  private final List<String> dynamicRequires = new ArrayList<>();
   private boolean hasFullParseDependencyInfo = false;
   private ModuleType jsModuleType = ModuleType.NONE;
 
@@ -220,28 +219,6 @@ public class CompilerInput implements SourceAst, DependencyInfo {
     return false;
   }
 
-  /**
-   * Returns the types that this input dynamically depends on in the order seen in the file. The
-   * returned types were loaded dynamically so while they are part of the dependency graph, they do
-   * not need sorted before this input.
-   */
-  public ImmutableList<String> getDynamicRequires() {
-    return ImmutableList.copyOf(dynamicRequires);
-  }
-
-  /**
-   * Registers a type that this input depends on in the order seen in the file. The type was loaded
-   * dynamically so while it is part of the dependency graph, it does not need sorted before this
-   * input.
-   */
-  public boolean addDynamicRequire(String require) {
-    if (!dynamicRequires.contains(require)) {
-      dynamicRequires.add(require);
-      return true;
-    }
-    return false;
-  }
-
   public void setHasFullParseDependencyInfo(boolean hasFullParseDependencyInfo) {
     this.hasFullParseDependencyInfo = hasFullParseDependencyInfo;
   }
@@ -306,7 +283,7 @@ public class CompilerInput implements SourceAst, DependencyInfo {
         return new LazyParsedDependencyInfo(info, (JsAst) ast, compiler);
       } catch (IOException e) {
         compiler.getErrorManager().report(CheckLevel.ERROR,
-            JSError.make(AbstractCompiler.READ_ERROR, getName(), e.getMessage()));
+            JSError.make(AbstractCompiler.READ_ERROR, getName()));
         return SimpleDependencyInfo.EMPTY;
       }
     } else {

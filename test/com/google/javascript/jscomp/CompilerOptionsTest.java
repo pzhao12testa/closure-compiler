@@ -16,6 +16,8 @@
 
 package com.google.javascript.jscomp;
 
+import static junit.framework.TestCase.assertNull;
+
 import com.google.javascript.jscomp.CompilerOptions.LanguageMode;
 import com.google.javascript.rhino.Node;
 import com.google.javascript.rhino.Token;
@@ -94,5 +96,4 @@ public final class CompilerOptionsTest extends TestCase {
     assertTrue(options.optimizeArgumentsArray);
     assertEquals(StandardCharsets.US_ASCII, options.getOutputCharset());
   }
-
 }

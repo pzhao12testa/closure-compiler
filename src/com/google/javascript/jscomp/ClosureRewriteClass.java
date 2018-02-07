@@ -443,10 +443,8 @@ class ClosureRewriteClass extends AbstractPostOrderCallback
     }
 
     for (MemberDefinition def : cls.staticProps) {
-      if (!def.value.isCast()) {
-        // remove the original jsdoc info if it was attached to the value.
-        def.value.setJSDocInfo(null);
-      }
+      // remove the original jsdoc info if it was attached to the value.
+      def.value.setJSDocInfo(null);
 
       // example: ctr.prop = value
       block.addChildToBack(

@@ -576,13 +576,6 @@ final class NTIScope implements DeclaredTypeRegistry, Serializable, TypeIEnv<JST
     return decl == null ? null : decl.getNamespace();
   }
 
-  Namespace getNamespace(QualifiedName qname) {
-    Namespace ns = getNamespace(qname.getLeftmostName());
-    return (ns == null || qname.isIdentifier())
-        ? ns
-        : ns.getSubnamespace(qname.getAllButLeftmost());
-  }
-
   void addFunNamespace(Node qnameNode) {
     if (qnameNode.isName()) {
       String varName = qnameNode.getString();
@@ -648,6 +641,12 @@ final class NTIScope implements DeclaredTypeRegistry, Serializable, TypeIEnv<JST
     }
   }
 
+  Namespace getNamespace(QualifiedName qname) {
+    Namespace ns = getNamespace(qname.getLeftmostName());
+    return (ns == null || qname.isIdentifier())
+        ? ns : ns.getSubnamespace(qname.getAllButLeftmost());
+  }
+
   private Declaration getLocalDeclaration(String name, boolean includeTypes) {
     checkArgument(!name.contains("."));
     if (!isDefinedLocally(name, includeTypes)) {
@@ -707,15 +706,6 @@ final class NTIScope implements DeclaredTypeRegistry, Serializable, TypeIEnv<JST
     return decl != null ? decl : maybeGetForwardDeclaration(qname.toString());
   }
 
-  public Declaration getDeclaration(String name, boolean includeTypes) {
-    checkArgument(!name.contains("."));
-    Declaration decl = getLocalDeclaration(name, includeTypes);
-    if (decl != null) {
-      return decl;
-    }
-    return parent == null ? null : parent.getDeclaration(name, includeTypes);
-  }
-
   private Declaration maybeGetForwardDeclaration(String qname) {
     NTIScope globalScope = this;
     while (globalScope.parent != null) {
@@ -725,6 +715,15 @@ final class NTIScope implements DeclaredTypeRegistry, Serializable, TypeIEnv<JST
       return new Declaration(this.commonTypes.UNKNOWN, null, null, null, false, false);
     }
     return null;
+  }
+
+  public Declaration getDeclaration(String name, boolean includeTypes) {
+    checkArgument(!name.contains("."));
+    Declaration decl = getLocalDeclaration(name, includeTypes);
+    if (decl != null) {
+      return decl;
+    }
+    return parent == null ? null : parent.getDeclaration(name, includeTypes);
   }
 
   private Namespace getNamespaceAfterFreezing(String typeName) {

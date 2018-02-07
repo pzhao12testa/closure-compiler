@@ -381,61 +381,8 @@ public final class InlineAndCollapsePropertiesTest extends CompilerTestCase {
          + "(function() {a$b$y = 0;})(); a$b$y;");
   }
 
-  public void testLocalAliasCreatedAfterVarDeclaration1() {
-    test(
-        lines(
-            "var a = {b: 3};",
-            "function f() {",
-            "  var tmp;",
-            "  tmp = a;",
-            "  use(tmp.b);",
-            "}"),
-        lines(
-            "var a$b = 3",
-            "function f() {",
-            "  var tmp;",
-            "  tmp = null;",
-            "  use(a$b);",
-            "}"));
-  }
-
-  public void testLocalAliasCreatedAfterVarDeclaration2() {
-    test(
-        lines(
-            "var a = {b: 3}",
-            "function f() {",
-            "  var tmp;",
-            "  if (true) {",
-            "    tmp = a;",
-            "    use(tmp.b);",
-            "  }",
-            "}"),
-        lines(
-            "var a$b = 3;",
-            "function f() {",
-            "  var tmp;",
-            "  if (true) {",
-            "    tmp = null;",
-            "    use(a$b);",
-            "  }",
-            "}"));
-  }
-
-  public void testLocalAliasCreatedAfterVarDeclaration3() {
-    testSame(
-        lines(
-            "var a = { b : 3 };",
-            "function f() {",
-            "  var tmp;",
-            "  if (true) {",
-            "    tmp = a;",
-            "  }",
-            "  use(tmp);",
-            "}"));
-  }
-
   public void testPartialLocalCtorAlias() {
-    testWarning(
+    test(
         lines(
             "/** @constructor */ var Main = function() {};",
             "Main.doSomething = function(i) {}",
@@ -446,9 +393,20 @@ public final class InlineAndCollapsePropertiesTest extends CompilerTestCase {
             "    tmp = Main;",
             "    tmp.doSomething(5);",
             "  }",
-            "  use(tmp.doSomething);", // can't inline this use of tmp.
+            "  use(tmp.doSomething);",
             "}"),
-        AggressiveInlineAliases.UNSAFE_CTOR_ALIASING);
+        lines(
+            "/** @constructor */ var Main = function() {};",
+            "var Main$doSomething = function(i) {}",
+            "function f() {",
+            "  var tmp;",
+            "  if (g()) {",
+            "    use(tmp.doSomething);",
+            "    tmp = Main;",
+            "    Main$doSomething(5);",
+            "  }",
+            "  use(tmp.doSomething);", // This line will work incorrectly if g() is true.
+            "}"));
   }
 
   public void testFunctionAlias2() {
@@ -779,29 +737,26 @@ public final class InlineAndCollapsePropertiesTest extends CompilerTestCase {
   }
 
   public void test_b19179602() {
-    // Note that this only collapses a.b.staticProp because a.b is a constructor.
-    // Normally AggressiveInlineAliases would not inline "b" inside the loop.
     test(
-        lines(
-            "var a = {};",
-            "/** @constructor */ a.b = function() {};",
-            "a.b.staticProp = 5;",
-            "function f() {",
-            "  while (true) {",
-            // b is declared inside a loop, so it is reassigned multiple times
-            "    var b = a.b;",
-            "    alert(b.staticProp);",
-            "  }",
-            "}"),
-        lines(
-            "/** @constructor */ var a$b = function() {};",
-            "var a$b$staticProp = 5;",
-            "function f() {",
-            "  while (true) {",
-            "    var b = null;",
-            "    alert(a$b$staticProp);",
-            "  }",
-            "}"));
+        "var a = {};\n"
+        + "/** @constructor */ a.b = function() {};\n"
+        + "a.b.staticProp = 5;\n"
+        + "function f() {\n"
+        + "  while (true) {\n"
+        // b is declared inside a loop, so it is reassigned multiple times
+        + "    var b = a.b;\n"
+        + "    alert(b.staticProp);\n"
+        + "  }\n"
+        + "}\n", "/** @constructor */ var a$b = function() {};\n"
+        + "var a$b$staticProp = 5;\n"
+        + "\n"
+        + "function f() {\n"
+        + "  while (true) {\n"
+        + "    var b = a$b;\n"
+        + "    alert(b.staticProp);\n"
+        + "  }\n"
+        + "}",
+        warning(AggressiveInlineAliases.UNSAFE_CTOR_ALIASING));
   }
 
   public void test_b19179602_declareOutsideLoop() {

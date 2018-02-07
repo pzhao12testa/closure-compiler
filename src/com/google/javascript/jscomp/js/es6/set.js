@@ -31,12 +31,10 @@ $jscomp.polyfill('Set',
   /**
    * Checks conformance of the existing Set.
    * @return {boolean} True if the browser's implementation conforms.
-   * @suppress {missingProperties} "entries" unknown prototype
    */
   function isConformant() {
     if ($jscomp.ASSUME_NO_NATIVE_SET ||
         !NativeSet ||
-        typeof NativeSet != "function" ||
         !NativeSet.prototype.entries ||
         typeof Object.seal != 'function') {
       return false;

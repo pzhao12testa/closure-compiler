@@ -49,7 +49,7 @@ public final class ConvertToTypedInterfaceTest extends CompilerTestCase {
   }
 
   public void testExternsDefinitionsRespected() {
-    test(externs("/** @type {number} */ var x;"), srcs("x = 7;"), expected(""));
+    test("/** @type {number} */ var x;", "x = 7;", "");
   }
 
   public void testSimpleConstJsdocPropagation() {
@@ -92,9 +92,6 @@ public final class ConvertToTypedInterfaceTest extends CompilerTestCase {
 
     test("let /** number */ x = 4, /** string */ y = 'str';",
     "/** @type {number} */ var x; /** @type {string} */ var y;");
-
-    test("let /** number */ x, /** string */ y;",
-        "let /** number */ x; let /** string */ y;");
   }
 
   public void testThisPropertiesInConstructors() {
@@ -266,10 +263,6 @@ public final class ConvertToTypedInterfaceTest extends CompilerTestCase {
             "}",
             "/** @const {T} */ Bar.prototype.x;"));
 
-  }
-
-  public void testGoogAddSingletonGetter() {
-    testSame("class Foo {}  goog.addSingletonGetter(Foo);");
   }
 
   public void testLegacyGoogModule() {
@@ -1382,10 +1375,6 @@ public final class ConvertToTypedInterfaceTest extends CompilerTestCase {
             "  }",
             "}",
             ""));
-  }
-
-  public void testGoogGlobalTyped() {
-    testSame("/** @const */ var goog = {}; goog.global = this;");
   }
 
 

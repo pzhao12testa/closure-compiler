@@ -1728,7 +1728,7 @@ HTMLMediaElement.prototype.autobuffer;
 /** @type {!TimeRanges} */
 HTMLMediaElement.prototype.buffered;
 
-/** @type {?MediaStream} */
+/** @type {!MediaStream} */
 HTMLMediaElement.prototype.srcObject;
 
 /**
@@ -2155,7 +2155,7 @@ function HTMLAudioElement() {}
  * @constructor
  * @extends {HTMLMediaElement}
  * The webkit-prefixed attributes are defined in
- * https://cs.chromium.org/chromium/src/third_party/WebKit/Source/core/html/media/HTMLMediaElement.idl
+ * https://code.google.com/p/chromium/codesearch#chromium/src/third_party/WebKit/Source/core/html/HTMLVideoElement.idl
  */
 function HTMLVideoElement() {}
 
@@ -4511,12 +4511,6 @@ Navigator.prototype.plugins;
  */
 Navigator.prototype.javaEnabled = function() {};
 
-/**
- * @type {number}
- * @see https://developers.google.com/web/updates/2017/12/device-memory
- * https://github.com/w3c/device-memory
- */
-Navigator.prototype.deviceMemory;
 
 /**
  * @constructor

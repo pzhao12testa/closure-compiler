@@ -396,7 +396,7 @@ public class UnionType extends JSType {
       }
     }
 
-    return JSType.getLeastSupertype(this, that);
+    return getLeastSupertype(this, that);
   }
 
   JSType meet(JSType that) {

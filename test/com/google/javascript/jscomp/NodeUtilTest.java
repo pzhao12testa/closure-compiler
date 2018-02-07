@@ -46,7 +46,9 @@ import java.util.Set;
 import javax.annotation.Nullable;
 import junit.framework.TestCase;
 
-/** Tests for NodeUtil */
+/**
+ * Tests for NodeUtil
+ */
 public final class NodeUtilTest extends TestCase {
 
   private static Node parse(String js) {
@@ -72,19 +74,6 @@ public final class NodeUtilTest extends TestCase {
     return var.getFirstChild();
   }
 
-  private static Node getNode(Node root, Token token) {
-    for (Node n : root.children()) {
-      if (n.getToken() == token) {
-        return n;
-      }
-      Node potentialMatch = getNode(n, token);
-      if (potentialMatch != null) {
-        return potentialMatch;
-      }
-    }
-    return null;
-  }
-
   private static Node getYieldNode(String js) {
     return checkNotNull(getYieldNode(parse(js)));
   }
@@ -99,6 +88,19 @@ public final class NodeUtilTest extends TestCase {
 
   private static Node getAwaitNode(Node root) {
     return getNode(root, Token.AWAIT);
+  }
+
+  private static Node getNode(Node root, Token token) {
+    for (Node n : root.children()) {
+      if (n.getToken() == token) {
+        return n;
+      }
+      Node potentialMatch = getNode(n, token);
+      if (potentialMatch != null) {
+        return potentialMatch;
+      }
+    }
+    return null;
   }
 
   public void testGetNodeByLineCol_1() {
@@ -512,10 +514,6 @@ public final class NodeUtilTest extends TestCase {
     assertEquals(se, NodeUtil.mayHaveSideEffects(n.getFirstChild()));
   }
 
-  private void assertSideEffect(boolean se, Node n) {
-    assertEquals(se, NodeUtil.mayHaveSideEffects(n));
-  }
-
   private void assertSideEffect(boolean se, String js, boolean globalRegExp) {
     Node n = parse(js);
     Compiler compiler = new Compiler();
@@ -576,6 +574,9 @@ public final class NodeUtilTest extends TestCase {
     assertSideEffect(false, "[b, c [d, [e]]]");
     assertSideEffect(false, "({a: x, b: y, c: z})");
     assertSideEffect(false, "({a, b, c})");
+    assertSideEffect(false, "({[a]: x})");
+    assertSideEffect(true, "({[a()]: x})");
+    assertSideEffect(true, "({[a]: x()})");
     assertSideEffect(false, "/abc/gi");
     assertSideEffect(false, "'a'");
     assertSideEffect(false, "0");
@@ -640,33 +641,6 @@ public final class NodeUtilTest extends TestCase {
     assertSideEffect(true, "export class X {};");
     assertSideEffect(true, "export function x() {};");
     assertSideEffect(true, "export {x};");
-  }
-
-  public void testComputedPropSideEffects() {
-    assertSideEffect(false, "({[a]: x})");
-    assertSideEffect(true, "({[a()]: x})");
-    assertSideEffect(true, "({[a]: x()})");
-
-    Node computedProp = parse("({[a]: x})")  // SCRIPT
-        .getFirstChild()   // EXPR_RESULT
-        .getFirstChild()   // OBJECT_LIT
-        .getFirstChild();  // COMPUTED_PROP
-    checkState(computedProp.isComputedProp(), computedProp);
-    assertSideEffect(false, computedProp);
-
-    computedProp = parse("({[a()]: x})")  // SCRIPT
-        .getFirstChild()   // EXPR_RESULT
-        .getFirstChild()   // OBJECT_LIT
-        .getFirstChild();  // COMPUTED_PROP
-    checkState(computedProp.isComputedProp(), computedProp);
-    assertSideEffect(true, computedProp);
-
-    computedProp = parse("({[a]: x()})")  // SCRIPT
-        .getFirstChild()   // EXPR_RESULT
-        .getFirstChild()   // OBJECT_LIT
-        .getFirstChild();  // COMPUTED_PROP
-    checkState(computedProp.isComputedProp(), computedProp);
-    assertSideEffect(true, computedProp);
   }
 
   public void testObjectMethodSideEffects() {
@@ -3294,19 +3268,6 @@ public final class NodeUtilTest extends TestCase {
     return getClassNode(root);
   }
 
-  private static Node getClassNode(Node n) {
-    if (n.isClass()) {
-      return n;
-    }
-    for (Node c : n.children()) {
-      Node result = getClassNode(c);
-      if (result != null) {
-        return result;
-      }
-    }
-    return null;
-  }
-
   /**
    * @param js JavaScript node to be passed to {@code NodeUtil.findLhsNodesInNode}. Must be either
    *     an EXPR_RESULT containing an assignment operation (e.g. =, +=, /=, etc)
@@ -3323,6 +3284,19 @@ public final class NodeUtilTest extends TestCase {
       checkState(NodeUtil.isAssignmentOp(root), root);
     }
     return NodeUtil.findLhsNodesInNode(root);
+  }
+
+  private static Node getClassNode(Node n) {
+    if (n.isClass()) {
+      return n;
+    }
+    for (Node c : n.children()) {
+      Node result = getClassNode(c);
+      if (result != null) {
+        return result;
+      }
+    }
+    return null;
   }
 
   private static Node getCallNode(String js) {

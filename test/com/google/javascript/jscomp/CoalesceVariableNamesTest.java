@@ -577,7 +577,9 @@ public final class CoalesceVariableNamesTest extends CompilerTestCase {
             "};"));
   }
 
-  public void testCannotReuseAnyParamsBugWithDestructuring() {
+  // TODO(b/66919166): Fix this test and re-enable it.
+  // Same as above, but this time the parameter 'type' is part of a destructuring pattern.
+  public void disabled_testCannotReuseAnyParamsBugWithDestructuring() {
     testSame(lines(
         "function handleKeyboardShortcut({type: type}, key, isModifierPressed) {",
         "  if (!isModifierPressed) {",

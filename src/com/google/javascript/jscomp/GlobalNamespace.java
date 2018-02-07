@@ -125,6 +125,11 @@ class GlobalNamespace
 
   @Override
   public TypeI getTypeOfThis() {
+    return getTypeIOfThis();
+  }
+
+  @Override
+  public final TypeI getTypeIOfThis() {
     return compiler.getTypeIRegistry().getNativeObjectType(GLOBAL_THIS);
   }
 
@@ -790,30 +795,6 @@ class GlobalNamespace
       handleGet(module, scope, n, parent, name, type, true);
     }
 
-    /**
-     * Updates our representation of the global namespace to reflect a read of a global name.
-     *
-     * @param module The current module
-     * @param scope The current scope
-     * @param n The node currently being visited
-     * @param parent {@code n}'s parent
-     * @param name The global name (e.g. "a" or "a.b.c.d")
-     * @param type The reference type
-     */
-    void handleGet(
-        JSModule module,
-        Scope scope,
-        Node n,
-        Node parent,
-        String name,
-        Ref.Type type,
-        boolean shouldCreateProp) {
-      Name nameObj = getOrCreateName(name, shouldCreateProp);
-
-      // No need to look up additional ancestors, since they won't be used.
-      nameObj.addRef(new Ref(module, scope, n, nameObj, type, currentPreOrderIndex++));
-    }
-
     private boolean isClassDefiningCall(Node callNode) {
       CodingConvention convention = compiler.getCodingConvention();
       // Look for goog.inherits, goog.mixin
@@ -890,6 +871,26 @@ class GlobalNamespace
         prev = anc;
       }
       return Ref.Type.ALIASING_GET;
+    }
+
+    /**
+     * Updates our representation of the global namespace to reflect a read
+     * of a global name.
+     *
+     * @param module The current module
+     * @param scope The current scope
+     * @param n The node currently being visited
+     * @param parent {@code n}'s parent
+     * @param name The global name (e.g. "a" or "a.b.c.d")
+     * @param type The reference type
+     */
+    void handleGet(JSModule module, Scope scope, Node n, Node parent,
+        String name, Ref.Type type, boolean shouldCreateProp) {
+      Name nameObj = getOrCreateName(name, shouldCreateProp);
+
+      // No need to look up additional ancestors, since they won't be used.
+      nameObj.addRef(
+          new Ref(module, scope, n, nameObj, type, currentPreOrderIndex++));
     }
 
     /**
@@ -1082,6 +1083,11 @@ class GlobalNamespace
 
     @Override
     public TypeI getType() {
+      return null;
+    }
+
+    @Override
+    public final TypeI getTypeI() {
       return null;
     }
 
