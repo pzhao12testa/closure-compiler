@@ -272,8 +272,8 @@ public final class EarlyEs6ToEs3Converter implements Callback, HotSwapCompilerPa
     NodeUtil.visitPreOrder(typeAst, new Visitor(){
       @Override
       public void visit(Node n) {
-        if (n.isString() && typeVars.contains(n.getString())) {
-          n.getParent().replaceChild(n, new Node(Token.QMARK));
+        if (n.isString() && n.getParent() != null && typeVars.contains(n.getString())) {
+          n.replaceWith(new Node(Token.QMARK));
         }
       }
     });
